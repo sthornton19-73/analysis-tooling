@@ -1,0 +1,5 @@
+node_modules/
+
+# Scratch output if the pipeline is ever run against this repo itself
+graphify-out/
+docs/.analysis-cache/

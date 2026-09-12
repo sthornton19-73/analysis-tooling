@@ -1,0 +1,10 @@
+{
+  "name": "analysis-tooling",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Repo-agnostic documentation pipeline: knowledge graph to symbol index, architecture diagrams and a technical due diligence pack.",
+  "scripts": {
+    "install-local": "node bin/install.cjs"
+  },
+  "dependencies": { "@babel/parser": "^7.25.0" }
+}

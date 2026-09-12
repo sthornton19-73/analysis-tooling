@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{color-scheme:light dark}
+  body{margin:0;font:14px system-ui,-apple-system,sans-serif}
+  img{max-width:100%}
+  [hidden]{display:none!important}
+</style>
+<title>{{PROJECT}} Symbol Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@85..112,400..700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+</head>
+<body>
+<style>
+:root{
+  --ground:#f5f6f2;
+  --surface:#ffffff;
+  --surface-2:#ebeee7;
+  --hover:#e3e9e2;
+  --ink:#15201c;
+  --ink-2:#4a574f;
+  --ink-3:#78867c;
+  --rule:#d6dbd1;
+  --rule-2:#e6eae1;
+  --accent:#1a7a60;
+  --accent-soft:#ddefe6;
+  --flag:#ab5119;
+  --flag-soft:#f6e4d7;
+  --sel:#cfe7dc;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0d1512;
+    --surface:#16221e;
+    --surface-2:#1d2b26;
+    --hover:#243530;
+    --ink:#e9efe9;
+    --ink-2:#a9b9af;
+    --ink-3:#7e8e85;
+    --rule:#2b3b35;
+    --rule-2:#22302b;
+    --accent:#5aecc0;
+    --accent-soft:#16332a;
+    --flag:#e6975f;
+    --flag-soft:#33211a;
+    --sel:#1d4639;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0d1512;
+  --surface:#16221e;
+  --surface-2:#1d2b26;
+  --hover:#243530;
+  --ink:#e9efe9;
+  --ink-2:#a9b9af;
+  --ink-3:#7e8e85;
+  --rule:#2b3b35;
+  --rule-2:#22302b;
+  --accent:#5aecc0;
+  --accent-soft:#16332a;
+  --flag:#e6975f;
+  --flag-soft:#33211a;
+  --sel:#1d4639;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);color:var(--ink);
+  font-family:Archivo,system-ui,-apple-system,sans-serif;
+  font-size:14px;line-height:1.5;margin:0;
+  padding-inline:18px;padding-block:0 48px;
+}
+.wrap{max-width:1240px;margin:0 auto}
+
+/* ── header ─────────────────────────────────────── */
+header{padding-block:28px 16px;border-bottom:2px solid var(--ink);display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:space-between}
+.brand{display:flex;flex-direction:column;gap:5px;min-width:260px}
+h1{font-size:1.5rem;font-weight:700;font-variation-settings:"wdth" 104;letter-spacing:-.012em;margin:0;line-height:1.1}
+.sub{color:var(--ink-2);font-size:.85rem;margin:0;max-width:60ch}
+.counts{display:flex;gap:0;flex-wrap:wrap}
+.counts div{padding-right:18px;margin-right:18px;border-right:1px solid var(--rule)}
+.counts div:last-child{border-right:0;margin-right:0;padding-right:0}
+.counts b{display:block;font-family:"JetBrains Mono",monospace;font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.25}
+.counts span{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+
+/* ── control bar ────────────────────────────────── */
+.bar{
+  position:sticky;top:0;z-index:20;background:var(--ground);
+  padding-block:12px;border-bottom:1px solid var(--rule);
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+}
+input[type="search"],select{
+  font-family:inherit;font-size:13px;color:var(--ink);
+  background:var(--surface);border:1px solid var(--rule);border-radius:2px;
+  padding:7px 10px;
+}
+input[type="search"]{flex:1 1 240px;min-width:0;font-family:"JetBrains Mono",monospace}
+input[type="search"]:focus-visible,select:focus-visible,button:focus-visible,tbody tr:focus-visible{
+  outline:2px solid var(--accent);outline-offset:1px;
+}
+label.ctl{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+button{
+  font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;
+  background:var(--surface);color:var(--ink);border:1px solid var(--rule);
+  border-radius:2px;padding:7px 12px;
+}
+button:hover{background:var(--hover)}
+button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+
+/* ── breadcrumb ─────────────────────────────────── */
+.crumb{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;padding-block:14px 10px;font-size:12px}
+.crumb a{color:var(--accent);cursor:pointer;text-decoration:none;border-bottom:1px solid transparent}
+.crumb a:hover{border-bottom-color:var(--accent)}
+.crumb span.sep{color:var(--ink-3)}
+.crumb .cur{font-family:"JetBrains Mono",monospace;color:var(--ink);font-weight:500}
+.hint{margin-left:auto;color:var(--ink-3);font-size:11px}
+kbd{font-family:"JetBrains Mono",monospace;font-size:10px;background:var(--surface-2);border:1px solid var(--rule);border-radius:2px;padding:1px 4px}
+
+/* ── tables ─────────────────────────────────────── */
+.tw{overflow-x:auto;border:1px solid var(--rule);border-radius:2px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:620px}
+thead th{
+  position:sticky;top:0;background:var(--surface-2);z-index:5;
+  text-align:left;font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--rule);
+  cursor:pointer;white-space:nowrap;user-select:none;
+}
+thead th:hover{color:var(--ink)}
+thead th.num{text-align:right}
+thead th .ar{color:var(--accent);font-size:9px}
+tbody tr{border-bottom:1px solid var(--rule-2);cursor:pointer}
+tbody tr:last-child{border-bottom:0}
+tbody tr:hover{background:var(--hover)}
+tbody tr.dead{cursor:default;color:var(--ink-3)}
+tbody tr.dead:hover{background:transparent}
+td{padding:8px 12px;vertical-align:top}
+td.num{text-align:right;font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+td.mono{font-family:"JetBrains Mono",monospace;font-size:12.5px;word-break:break-word}
+td.path{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--ink-2);word-break:break-all}
+td.dim{color:var(--ink-3);font-size:12px}
+.zero{color:var(--ink-3)}
+
+.badge{
+  display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:2px 6px;border-radius:2px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap;
+}
+.badge.fn{background:var(--accent-soft);color:var(--accent)}
+.badge.module{background:var(--flag-soft);color:var(--flag)}
+.badge.inferred{background:var(--flag-soft);color:var(--flag)}
+.rel{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink-2)}
+
+/* ── detail ─────────────────────────────────────── */
+.detail{margin-bottom:22px;padding:16px 18px;border:1px solid var(--rule);border-left:3px solid var(--accent);background:var(--surface);border-radius:2px}
+.detail h2{font-family:"JetBrains Mono",monospace;font-size:1.1rem;font-weight:700;margin:0 0 10px;word-break:break-word}
+.meta{display:flex;flex-wrap:wrap;gap:0;margin:0}
+.meta div{padding-right:20px;margin-right:20px;border-right:1px solid var(--rule);margin-bottom:6px}
+.meta div:last-child{border-right:0}
+.meta dt{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:0 0 2px}
+.meta dd{margin:0;font-family:"JetBrains Mono",monospace;font-size:12px}
+
+h3.sec{font-size:.82rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin:26px 0 8px;display:flex;gap:8px;align-items:baseline}
+h3.sec b{font-family:"JetBrains Mono",monospace;color:var(--accent);font-size:.9rem}
+.empty{padding:18px;color:var(--ink-3);font-size:13px;border:1px dashed var(--rule);border-radius:2px;background:var(--surface)}
+.foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--rule);color:var(--ink-3);font-size:11.5px;max-width:78ch}
+.foot code{font-family:"JetBrains Mono",monospace;background:var(--surface-2);padding:.08em .3em;border-radius:2px}
+
+/* ── code panel ─────────────────────────────────── */
+.codehead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:26px 0 8px}
+.codehead h3{margin:0;font-size:.82rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.codehead .loc{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--ink-2)}
+.codehead .acts{margin-left:auto;display:flex;gap:6px}
+.codehead button{padding:5px 9px;font-size:11px}
+.codewrap{border:1px solid var(--rule);border-radius:2px;background:var(--surface);overflow:auto;max-height:70vh}
+.code{font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.62;min-width:max-content}
+.cl{display:flex;white-space:pre}
+.cl .ln{
+  flex:0 0 auto;width:52px;padding:0 10px 0 0;text-align:right;
+  color:var(--ink-3);background:var(--surface-2);user-select:none;
+  font-variant-numeric:tabular-nums;position:sticky;left:0;
+  border-right:1px solid var(--rule-2);
+}
+.cl .cc{padding:0 14px;flex:1 1 auto}
+.cl.in{background:var(--accent-soft)}
+.cl.in .ln{background:var(--sel);color:var(--ink-2);font-weight:700}
+.cl.cmt .cc{color:var(--ink-3)}
+.approx{background:var(--flag-soft);color:var(--flag);border:1px solid var(--flag);border-radius:2px;padding:6px 10px;font-size:11.5px;margin-bottom:8px}
+
+@media (max-width:620px){
+  header{gap:12px}
+  .counts div{padding-right:14px;margin-right:14px}
+  .hint{display:none}
+  .cl .ln{width:42px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="brand">
+    <h1>{{PROJECT}} Symbol Index</h1>
+    <p class="sub">Drill from file → symbol → callers and callees. Every row is the graph, flattened into something you can sort.</p>
+  </div>
+  <div class="counts">
+    <div><b id="cFiles">–</b><span>files</span></div>
+    <div><b id="cNodes">–</b><span>symbols</span></div>
+    <div><b id="cEdges">–</b><span>edges</span></div>
+    <div><b id="cComm">–</b><span>communities</span></div>
+  </div>
+</header>
+
+<div class="bar">
+  <input type="search" id="q" placeholder="search symbols and files…" autocomplete="off" spellcheck="false">
+  <label class="ctl" for="fComm">area
+    <select id="fComm"><option value="">all</option></select>
+  </label>
+  <label class="ctl" for="fKind">kind
+    <select id="fKind"><option value="">all</option></select>
+  </label>
+  <button id="bCalls" type="button">calls only</button>
+  <button id="bAst" type="button">verified only</button>
+  <button id="bFlat" type="button">flat symbol list</button>
+</div>
+
+<div class="crumb" id="crumb"></div>
+<div id="main"></div>
+
+<p class="foot" id="foot"></p>
+</div>
+
+<script id="gd" type="application/json"></script>
+<script id="cd" type="application/json"></script>
+<script>
+(function(){
+"use strict";
+var D = JSON.parse(document.getElementById('gd').textContent);
+var N = D.n, E = D.e;
+var C = JSON.parse(document.getElementById('cd').textContent);
+var SRC = C.f, RANGE = C.r;
+var LINES = {}; // lazy split cache
+function linesOf(f){
+  if(!LINES[f]) LINES[f] = SRC[f].split(/\r?\n/);
+  return LINES[f];
+}
+
+// ── indexes ────────────────────────────────────────────────────────────
+var CALLREL = {calls:1, method:1, indirect_call:1};
+var outE = [], inE = [];
+for (var i=0;i<N.length;i++){ outE[i]=[]; inE[i]=[]; }
+for (var j=0;j<E.length;j++){
+  var s=E[j][0], t=E[j][1], r=E[j][2];
+  outE[s].push([t,r]); inE[t].push([s,r]);
+}
+
+var files = {};           // path -> {nodes:[], fanIn, fanOut}
+for (var k=0;k<N.length;k++){
+  var f = N[k].f || '(no file)';
+  if(!files[f]) files[f]={p:f, nodes:[], fanIn:0, fanOut:0, comm:{}};
+  files[f].nodes.push(k);
+  if(N[k].cn) files[f].comm[N[k].cn]=(files[f].comm[N[k].cn]||0)+1;
+}
+for (var m=0;m<E.length;m++){
+  var a=N[E[m][0]].f||'(no file)', b=N[E[m][1]].f||'(no file)';
+  if(a!==b){ files[a].fanOut++; files[b].fanIn++; }
+}
+var fileList = Object.keys(files).map(function(p){
+  var o=files[p];
+  var top='', best=-1;
+  for(var c in o.comm){ if(o.comm[c]>best){best=o.comm[c];top=c;} }
+  o.area=top; o.sym=o.nodes.length;
+  return o;
+});
+
+var comms = {};
+N.forEach(function(n){ if(n.cn) comms[n.cn]=(comms[n.cn]||0)+1; });
+var kinds = {};
+N.forEach(function(n){ kinds[n.k]=(kinds[n.k]||0)+1; });
+
+// ── state ──────────────────────────────────────────────────────────────
+var st = {view:'files', file:null, node:null, q:'', comm:'', kind:'',
+          callsOnly:false, astOnly:false, ctx:0, wholeFile:false,
+          sort:{files:['fanIn',-1], syms:['fanOut',-1], flat:['fanIn',-1]}};
+
+var $ = function(id){ return document.getElementById(id); };
+var esc = function(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+
+// ── populate filters ───────────────────────────────────────────────────
+$('cFiles').textContent = fileList.length.toLocaleString();
+$('cNodes').textContent = N.length.toLocaleString();
+$('cEdges').textContent = E.length.toLocaleString();
+$('cComm').textContent  = Object.keys(comms).length.toLocaleString();
+
+Object.keys(comms).sort(function(a,b){return comms[b]-comms[a];}).forEach(function(c){
+  var o=document.createElement('option'); o.value=c; o.textContent=c+' ('+comms[c]+')';
+  $('fComm').appendChild(o);
+});
+Object.keys(kinds).sort(function(a,b){return kinds[b]-kinds[a];}).forEach(function(c){
+  var o=document.createElement('option'); o.value=c; o.textContent=c+' ('+kinds[c]+')';
+  $('fKind').appendChild(o);
+});
+
+// ── helpers ────────────────────────────────────────────────────────────
+function edgesOf(list){
+  return st.callsOnly ? list.filter(function(x){ return CALLREL[x[1]]; }) : list;
+}
+function nodePasses(i){
+  var n=N[i];
+  if(st.comm && n.cn!==st.comm) return false;
+  if(st.kind && n.k!==st.kind) return false;
+  if(st.astOnly && !n.o) return false;
+  if(st.q){
+    var q=st.q.toLowerCase();
+    if((n.l||'').toLowerCase().indexOf(q)<0 && (n.f||'').toLowerCase().indexOf(q)<0) return false;
+  }
+  return true;
+}
+function kindBadge(k){
+  var cls = k==='fn'||k==='class' ? 'fn' : k==='module' ? 'module' : '';
+  return '<span class="badge '+cls+'">'+esc(k)+'</span>';
+}
+function num(v){ return v ? String(v) : '<span class="zero">0</span>'; }
+function sortArrow(key, cur){ return cur[0]===key ? ' <span class="ar">'+(cur[1]<0?'▼':'▲')+'</span>' : ''; }
+
+function sortRows(rows, cur, getters){
+  var key=cur[0], dir=cur[1], get=getters[key];
+  return rows.slice().sort(function(a,b){
+    var x=get(a), y=get(b);
+    if(typeof x==='string'){ return dir*x.localeCompare(y); }
+    return dir*(x-y);
+  });
+}
+
+// ── renderers ──────────────────────────────────────────────────────────
+function renderFiles(){
+  var rows = fileList.filter(function(o){
+    if(st.comm && o.area!==st.comm) return false;
+    if(st.q && o.p.toLowerCase().indexOf(st.q.toLowerCase())<0){
+      // keep the file if any of its symbols match
+      var any=o.nodes.some(nodePasses);
+      if(!any) return false;
+    }
+    if(st.kind || st.astOnly){ if(!o.nodes.some(nodePasses)) return false; }
+    return true;
+  });
+  var cur=st.sort.files;
+  rows = sortRows(rows, cur, {
+    path:function(o){return o.p;}, area:function(o){return o.area||'';},
+    sym:function(o){return o.sym;}, fanIn:function(o){return o.fanIn;}, fanOut:function(o){return o.fanOut;}
+  });
+
+  var h='<div class="tw"><table><thead><tr>'+
+    '<th data-s="path">file'+sortArrow('path',cur)+'</th>'+
+    '<th data-s="area">area'+sortArrow('area',cur)+'</th>'+
+    '<th class="num" data-s="sym">symbols'+sortArrow('sym',cur)+'</th>'+
+    '<th class="num" data-s="fanIn">fan-in'+sortArrow('fanIn',cur)+'</th>'+
+    '<th class="num" data-s="fanOut">fan-out'+sortArrow('fanOut',cur)+'</th>'+
+    '</tr></thead><tbody>';
+  rows.forEach(function(o){
+    h+='<tr tabindex="0" data-file="'+esc(o.p)+'">'+
+       '<td class="path">'+esc(o.p)+'</td>'+
+       '<td class="dim">'+esc(o.area)+'</td>'+
+       '<td class="num">'+o.sym+'</td>'+
+       '<td class="num">'+num(o.fanIn)+'</td>'+
+       '<td class="num">'+num(o.fanOut)+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  if(!rows.length) h='<div class="empty">No files match these filters.</div>';
+  $('main').innerHTML=h;
+  setFoot(rows.length+' of '+fileList.length+' files. Fan-in and fan-out count edges crossing the file boundary.');
+}
+
+function renderSymbols(file){
+  var o=files[file];
+  var rows=o.nodes.filter(nodePasses);
+  var cur=st.sort.syms;
+  rows=sortRows(rows, cur, {
+    name:function(i){return N[i].l;}, kind:function(i){return N[i].k;},
+    line:function(i){return parseInt(String(N[i].ln).replace(/\D/g,''),10)||0;},
+    fanIn:function(i){return edgesOf(inE[i]).length;},
+    fanOut:function(i){return edgesOf(outE[i]).length;}
+  });
+  var h='<div class="detail"><h2>'+esc(file)+'</h2><dl class="meta">'+
+    '<div><dt>area</dt><dd>'+esc(o.area||'-')+'</dd></div>'+
+    '<div><dt>symbols</dt><dd>'+o.sym+'</dd></div>'+
+    '<div><dt>fan-in</dt><dd>'+o.fanIn+'</dd></div>'+
+    '<div><dt>fan-out</dt><dd>'+o.fanOut+'</dd></div>'+
+    '</dl></div>';
+  h+='<div class="tw"><table><thead><tr>'+
+    '<th data-s="name">symbol'+sortArrow('name',cur)+'</th>'+
+    '<th data-s="kind">kind'+sortArrow('kind',cur)+'</th>'+
+    '<th data-s="line">line'+sortArrow('line',cur)+'</th>'+
+    '<th class="num" data-s="fanIn">called by'+sortArrow('fanIn',cur)+'</th>'+
+    '<th class="num" data-s="fanOut">calls'+sortArrow('fanOut',cur)+'</th>'+
+    '</tr></thead><tbody>';
+  rows.forEach(function(i){
+    h+='<tr tabindex="0" data-node="'+i+'">'+
+       '<td class="mono">'+esc(N[i].l)+'</td>'+
+       '<td>'+kindBadge(N[i].k)+(N[i].o?'':' <span class="badge inferred">inferred</span>')+'</td>'+
+       '<td class="dim">'+esc(N[i].ln||'-')+'</td>'+
+       '<td class="num">'+num(edgesOf(inE[i]).length)+'</td>'+
+       '<td class="num">'+num(edgesOf(outE[i]).length)+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  if(!rows.length) h+='<div class="empty">No symbols in this file match the current filters.</div>';
+  $('main').innerHTML=h;
+  setFoot(rows.length+' symbols shown. Rows marked <span class="badge inferred">inferred</span> came from docs or screenshots, not the AST - treat them as claims.');
+}
+
+function edgeTable(list, dir){
+  if(!list.length) return '<div class="empty">None'+(st.callsOnly?' (with “calls only” on)':'')+'.</div>';
+  var h='<div class="tw"><table><thead><tr><th>symbol</th><th>relation</th><th>file</th><th>kind</th></tr></thead><tbody>';
+  list.slice().sort(function(a,b){ return N[a[0]].l.localeCompare(N[b[0]].l); }).forEach(function(x){
+    var i=x[0];
+    h+='<tr tabindex="0" data-node="'+i+'">'+
+       '<td class="mono">'+esc(N[i].l)+'</td>'+
+       '<td class="rel">'+esc(x[1])+'</td>'+
+       '<td class="path">'+esc(N[i].f||'-')+'</td>'+
+       '<td>'+kindBadge(N[i].k)+'</td></tr>';
+  });
+  return h+'</tbody></table></div>';
+}
+
+function renderNode(i){
+  var n=N[i];
+  var ins=edgesOf(inE[i]), outs=edgesOf(outE[i]);
+  var h='<div class="detail"><h2>'+esc(n.l)+'</h2><dl class="meta">'+
+    '<div><dt>kind</dt><dd>'+esc(n.k)+'</dd></div>'+
+    '<div><dt>file</dt><dd>'+esc(n.f||'-')+'</dd></div>'+
+    '<div><dt>line</dt><dd>'+esc(n.ln||'-')+'</dd></div>'+
+    '<div><dt>area</dt><dd>'+esc(n.cn||'-')+'</dd></div>'+
+    '<div><dt>source</dt><dd>'+(n.o?'AST (verified)':'inferred')+'</dd></div>'+
+    '</dl></div>';
+  h+=codePanel(i);
+  h+='<h3 class="sec">called by / referenced by <b>'+ins.length+'</b></h3>'+edgeTable(ins,'in');
+  h+='<h3 class="sec">calls / references <b>'+outs.length+'</b></h3>'+edgeTable(outs,'out');
+  $('main').innerHTML=h;
+  setFoot('Click any row to walk to that symbol. “calls only” narrows both tables to calls, methods and indirect calls.');
+}
+
+// ── code panel ─────────────────────────────────────────────────────────
+// Ranges come from @babel/parser (js/jsx/mjs) and python's ast (py), so the
+// end line is real. Nodes with no parsed range fall back to a fixed window
+// and are labelled approximate rather than presented as exact.
+function rangeFor(i){
+  var n=N[i];
+  if(!n.f || !SRC[n.f]) return null;
+  var total=linesOf(n.f).length;
+  if(RANGE[i]) return {s:RANGE[i][0], e:RANGE[i][1], exact:true, total:total};
+  if(n.k==='module') return {s:1, e:total, exact:true, total:total, whole:true};
+  var ln=parseInt(String(n.ln).replace(/\D/g,''),10);
+  if(!ln) return null;
+  return {s:ln, e:Math.min(total, ln+29), exact:false, total:total};
+}
+function codePanel(i){
+  var n=N[i], r=rangeFor(i);
+  if(!r){
+    return '<div class="codehead"><h3>source</h3></div><div class="empty">No source on file for this node'+
+      (n.o?'':' - it was inferred from docs or a screenshot, not parsed from code')+'.</div>';
+  }
+  var pad=st.ctx||0;
+  var from=Math.max(1, r.s-pad), to=Math.min(r.total, r.e+pad);
+  if(st.wholeFile){ from=1; to=r.total; }
+  var L=linesOf(n.f), out=[];
+  for(var k=from;k<=to;k++){
+    var line=L[k-1]!==undefined?L[k-1]:'';
+    var t=line.replace(/^\s+/,'');
+    var isC = t.indexOf('//')===0 || t.indexOf('#')===0 || t.indexOf('*')===0 || t.indexOf('/*')===0;
+    out.push('<div class="cl'+(k>=r.s&&k<=r.e?' in':'')+(isC?' cmt':'')+'">'+
+      '<span class="ln">'+k+'</span><span class="cc">'+esc(line||' ')+'</span></div>');
+  }
+  var h='<div class="codehead"><h3>source</h3>'+
+    '<span class="loc">'+esc(n.f)+':'+r.s+(r.e!==r.s?'–'+r.e:'')+'  ·  '+(r.e-r.s+1)+' lines</span>'+
+    '<span class="acts">'+
+      '<button type="button" data-ctx="20">± context</button>'+
+      '<button type="button" data-whole="1"'+(st.wholeFile?' class="on"':'')+'>whole file</button>'+
+      '<button type="button" data-copy="'+i+'">copy</button>'+
+    '</span></div>';
+  if(!r.exact) h+='<div class="approx">Approximate - no parsed end line for this symbol, so this is a fixed 30-line window from its start. Use “whole file” to see the real extent.</div>';
+  h+='<div class="codewrap"><div class="code">'+out.join('')+'</div></div>';
+  return h;
+}
+function copyCode(i){
+  var n=N[i], r=rangeFor(i);
+  if(!r) return;
+  var L=linesOf(n.f);
+  var txt=L.slice(r.s-1, r.e).join('\n');
+  navigator.clipboard && navigator.clipboard.writeText(txt).then(function(){
+    var b=document.querySelector('[data-copy]'); if(b){ var o=b.textContent; b.textContent='copied'; setTimeout(function(){b.textContent=o;},1200); }
+  });
+}
+
+function renderFlat(){
+  var rows=[]; for(var i=0;i<N.length;i++){ if(nodePasses(i)) rows.push(i); }
+  var cur=st.sort.flat;
+  rows=sortRows(rows,cur,{
+    name:function(i){return N[i].l;}, kind:function(i){return N[i].k;},
+    file:function(i){return N[i].f||'';},
+    fanIn:function(i){return edgesOf(inE[i]).length;},
+    fanOut:function(i){return edgesOf(outE[i]).length;}
+  });
+  var h='<div class="tw"><table><thead><tr>'+
+    '<th data-s="name">symbol'+sortArrow('name',cur)+'</th>'+
+    '<th data-s="kind">kind'+sortArrow('kind',cur)+'</th>'+
+    '<th data-s="file">file'+sortArrow('file',cur)+'</th>'+
+    '<th class="num" data-s="fanIn">called by'+sortArrow('fanIn',cur)+'</th>'+
+    '<th class="num" data-s="fanOut">calls'+sortArrow('fanOut',cur)+'</th>'+
+    '</tr></thead><tbody>';
+  rows.forEach(function(i){
+    h+='<tr tabindex="0" data-node="'+i+'">'+
+       '<td class="mono">'+esc(N[i].l)+'</td>'+
+       '<td>'+kindBadge(N[i].k)+'</td>'+
+       '<td class="path">'+esc(N[i].f||'-')+'</td>'+
+       '<td class="num">'+num(edgesOf(inE[i]).length)+'</td>'+
+       '<td class="num">'+num(edgesOf(outE[i]).length)+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  if(!rows.length) h='<div class="empty">Nothing matches these filters.</div>';
+  $('main').innerHTML=h;
+  setFoot(rows.length.toLocaleString()+' of '+N.length.toLocaleString()+' symbols.');
+}
+
+function setFoot(s){ $('foot').innerHTML=s; }
+
+function crumb(){
+  var h='';
+  if(st.view==='files'){ h='<span class="cur">All files</span>'; }
+  else if(st.view==='flat'){ h='<span class="cur">All symbols</span>'; }
+  else if(st.view==='syms'){
+    h='<a data-go="files">All files</a><span class="sep">/</span><span class="cur">'+esc(st.file)+'</span>';
+  } else if(st.view==='node'){
+    var n=N[st.node];
+    h='<a data-go="files">All files</a>';
+    if(n.f){ h+='<span class="sep">/</span><a data-go="syms" data-file="'+esc(n.f)+'">'+esc(n.f)+'</a>'; }
+    h+='<span class="sep">/</span><span class="cur">'+esc(n.l)+'</span>';
+  }
+  h+='<span class="hint"><kbd>/</kbd> search · <kbd>Esc</kbd> back</span>';
+  $('crumb').innerHTML=h;
+}
+
+function render(){
+  crumb();
+  if(st.view==='files') renderFiles();
+  else if(st.view==='syms') renderSymbols(st.file);
+  else if(st.view==='node') renderNode(st.node);
+  else renderFlat();
+  $('bCalls').className = st.callsOnly?'on':'';
+  $('bAst').className   = st.astOnly?'on':'';
+  $('bFlat').className  = st.view==='flat'?'on':'';
+}
+
+// ── events ─────────────────────────────────────────────────────────────
+document.addEventListener('click', function(ev){
+  var cp=ev.target.closest('[data-copy]');
+  if(cp){ copyCode(+cp.dataset.copy); return; }
+  var cx=ev.target.closest('[data-ctx]');
+  if(cx){ st.ctx = st.ctx ? 0 : +cx.dataset.ctx; render(); return; }
+  var wf=ev.target.closest('[data-whole]');
+  if(wf){ st.wholeFile=!st.wholeFile; render(); return; }
+  var go=ev.target.closest('[data-go]');
+  if(go){
+    if(go.dataset.go==='files'){ st.view='files'; st.file=null; }
+    else { st.view='syms'; st.file=go.dataset.file; }
+    render(); return;
+  }
+  var th=ev.target.closest('th[data-s]');
+  if(th){
+    var bucket = st.view==='files'?'files': st.view==='flat'?'flat':'syms';
+    var cur=st.sort[bucket], key=th.dataset.s;
+    st.sort[bucket] = cur[0]===key ? [key,-cur[1]] : [key, (key==='path'||key==='name'||key==='file'||key==='kind'||key==='area')?1:-1];
+    render(); return;
+  }
+  var tr=ev.target.closest('tr[data-node]');
+  if(tr){ st.node=+tr.dataset.node; st.view='node'; st.ctx=0; st.wholeFile=false; window.scrollTo(0,0); render(); return; }
+  var trf=ev.target.closest('tr[data-file]');
+  if(trf){ st.file=trf.dataset.file; st.view='syms'; window.scrollTo(0,0); render(); return; }
+});
+document.addEventListener('keydown', function(ev){
+  if(ev.key==='Enter'){
+    var r=document.activeElement;
+    if(r && r.matches('tr[data-node],tr[data-file]')){ r.click(); ev.preventDefault(); }
+    return;
+  }
+  if(ev.key==='/' && document.activeElement!==$('q')){ ev.preventDefault(); $('q').focus(); $('q').select(); return; }
+  if(ev.key==='Escape'){
+    if(document.activeElement===$('q')){ $('q').blur(); return; }
+    if(st.view==='node'){ var n=N[st.node]; if(n.f){ st.view='syms'; st.file=n.f; } else st.view='files'; }
+    else if(st.view==='syms'){ st.view='files'; st.file=null; }
+    render();
+  }
+});
+var qt;
+$('q').addEventListener('input', function(e){
+  clearTimeout(qt);
+  qt=setTimeout(function(){
+    st.q=e.target.value.trim();
+    if(st.q && st.view==='files') st.view='flat';
+    if(!st.q && st.view==='flat') st.view='files';
+    render();
+  },140);
+});
+$('fComm').addEventListener('change', function(e){ st.comm=e.target.value; render(); });
+$('fKind').addEventListener('change', function(e){ st.kind=e.target.value; if(st.kind && st.view==='files') st.view='flat'; render(); });
+$('bCalls').addEventListener('click', function(){ st.callsOnly=!st.callsOnly; render(); });
+$('bAst').addEventListener('click', function(){ st.astOnly=!st.astOnly; if(st.astOnly && st.view==='files') st.view='flat'; render(); });
+$('bFlat').addEventListener('click', function(){ st.view = st.view==='flat'?'files':'flat'; render(); });
+
+render();
+})();
+</script>
+</body>
+</html>
