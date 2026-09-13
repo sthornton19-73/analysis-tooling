@@ -33,9 +33,10 @@ Two repositories are consumers today and both have a complete artefact set:
 Two more repositories have been scoped but not run:
 
 - `D:\apps\ServerlessWP` - graph already built and directed. Mostly JS despite 10k PHP
-  files, because graphify ignored the copied WordPress trees. 38 PHP nodes will be
-  approximate; there is no PHP range extractor yet. Spot symbol:
-  `porting/control-plane/lib/deploy.js finish`.
+  files, because graphify ignored the copied WordPress trees. **No longer blocked:** the
+  PHP extractor landed 2026-09-12, and all 21 of its PHP functions now carry exact ranges.
+  The other 17 PHP nodes are file-level module nodes pointing at line 1 (`<?php`), which
+  correctly get none. Spot symbol: `porting/control-plane/lib/deploy.js finish`.
 - `D:\apps\cloud-relationship-engine` - **existing graph is undirected and must be rebuilt
   with `/graphify . --directed`**. 1,438 Python nodes and 630 JS/JSX, so both extractors
   apply. No `.gitignore` rules yet. Spot symbol: `AWSTooling/registry.py role_arn_for`.
@@ -67,13 +68,44 @@ Read in this order to come up to speed:
 - Swept em dashes from every artefact and put the rule inside each authoring prompt.
 - Cross-linked the artefact set so the architecture document is a single entry point.
 
+### Session of 2026-09-12
+
+- **Added `php-ranges.php`**, a PHP range extractor using core `token_get_all`, wired into
+  `build-codedata.cjs` as section 3b and into `bin/install.cjs`. Core only, deliberately:
+  `nikic/php-parser` would give real AST end lines but needs a composer install into the
+  repo being analysed, and this pipeline adds nothing to its target. It is invoked as
+  `php -n` so a php.ini referencing a missing extension cannot put a startup warning where
+  JSON is expected, and it runs only when the repo actually contains PHP, so a JS-only repo
+  gets no spurious "not found" line. `PHP=/path/to/php` overrides the binary.
+- It is a lexer, not a parser, so it **emits no row for anything it cannot close exactly**:
+  arrow functions (`fn($x) => $x + 1`, which have no closing delimiter) and any declaration
+  whose braces never balance. That is the CLAUDE.md rule applied rather than broken.
+- Verified three ways: a trap fixture of 16 asserted ranges covering interpolated strings,
+  heredoc and nowdoc braces, abstract and interface methods, closures, anonymous classes and
+  the arrow-function skip; ServerlessWP, where 21 of 21 PHP functions matched and every range
+  ends on a closing brace; and a RefCoach regression that reproduced the baseline exactly,
+  1202 nodes, 2047 edges, 618 exact ranges, `quickSaveEvent L500-L586`.
+- **Added a consolidated quick start** to `SESSION-RUNBOOK.md` and the full three-command
+  sequence to `README.md`. The commands were always there, spread across Phases 0 to 2, but
+  there was nowhere to copy the whole run from, and the README showed `run.cjs` without
+  mentioning that `/graphify` has to come first.
+- **Swept 11 em dashes** out of `verify.cjs`, `build-codedata.cjs`, `build-graphdata.cjs`,
+  `py-ranges.py` and `inject.cjs`. All pre-existing, all in comments or printed output. The
+  markdown was already clean, which is why this went unnoticed: the rule was being applied
+  to the prose and not to the scripts.
+
 ## Failed attempts, do not repeat
 
 - **Heuristic end-of-function detection.** Blank line, next symbol, brace counting. All
   wrong often enough to be worse than useless, because they return *a* function body.
 - **`sed -i` and `node -e` for edits containing backslashes.** Escaping through the shell
   silently mangles them; the `</` escape in `inject.cjs` was neutered this way once and
-  still passed `node --check`. Write a script to a file and run it.
+  still passed `node --check`. Write a script to a file and run it. **A quoted bash heredoc
+  is not a safe channel either**, which cost four separate failures in the 2026-09-12
+  session: `'\\'` in PHP arrived as `'\'` and the parse error surfaced four lines later;
+  `printf '\\n...'` in a markdown code block arrived as real newlines; and `Foo\\bar` in
+  a prose table arrived as `Foo` plus a literal backspace byte, which greps as `Fooar` and
+  is invisible in an editor. Use the Write tool, or `chr(92)` / `String.fromCharCode(92)`.
 - **Assuming a wide container plus a 66ch reading measure looks good.** It renders as a page
   using half its width. `doc-shell.html` has the settled values.
 - **Declaring breakout CSS before the rules it overrides.** `.tblwrap{margin:22px 0}` resets
@@ -81,10 +113,9 @@ Read in this order to come up to speed:
 
 ## Next steps
 
-Roughly in value order. None is started.
+Roughly in value order. Item 1 is done; nothing below it is started.
 
-1. **A PHP range extractor** alongside `py-ranges.py`, using `token_get_all`. Unblocks
-   ServerlessWP and any WordPress or Laravel repository. Perhaps an hour.
+1. ~~**A PHP range extractor.**~~ **Done 2026-09-12**, see "Changes made getting here".
 2. **Make `run.cjs` own the `.gitignore` step.** It is currently a manual instruction in
    Phase 0 and it has already been got wrong once - the patterns were appended to a
    subdirectory's `.gitignore`, where they are relative to that directory and silently
@@ -105,4 +136,9 @@ Roughly in value order. None is started.
 - No em dashes, anywhere. See `CLAUDE.md`.
 - Do not commit in `claude-session-dashboard`; its `CLAUDE.md` forbids it.
 - Verification is empirical. There is no test suite: run the pipeline against a real
-  repository and check the runbook's gates.
+  repository and check the runbook's gates. To verify without writing into another repo,
+  call `build-graphdata.cjs` and `build-codedata.cjs` with an out-dir in a scratch path:
+  both take `(repo-root, out-dir)`, so only `run.cjs` writes to `<repo>/docs`.
+- A `php` binary is needed only for repos containing PHP. This machine has PHP 7.4 at
+  `C:/laragon/bin/php/php-7.4.20/php`, which is on `PATH`. Note 7.4 lexes `enum` as a plain
+  identifier, so enum bodies need 8.1+.

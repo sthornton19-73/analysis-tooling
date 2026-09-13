@@ -37,9 +37,15 @@ against a real repository and check the gates in the runbook's Phase 2.
 ## Hard-won rules, none of which are optional
 
 - **Never guess a function's end line.** Ranges come from a real parser: `@babel/parser`
-  for JS/JSX/TS, the Python `ast` module via `end_lineno` for `.py`. Heuristics (next blank
-  line, next symbol, brace counting) are wrong often enough to poison the document. A symbol
-  with no exact range is labelled **approximate** in the UI; it is never given a guessed body.
+  for JS/JSX/TS, the Python `ast` module via `end_lineno` for `.py`, PHP's own `token_get_all`
+  for `.php`. Heuristics (next blank line, next symbol, brace counting) are wrong often
+  enough to poison the document. A symbol with no exact range is labelled **approximate** in
+  the UI; it is never given a guessed body.
+- **`php-ranges.php` skips what it cannot close.** It is a lexer, not a parser, so a body's
+  end is found by counting braces. An arrow function (`fn($x) => $x + 1`) has no closing
+  delimiter, so it gets no row at all rather than a guessed one, and the same goes for any
+  declaration whose braces never balance. Emitting no range is the correct outcome: the UI
+  labels it approximate. Do not "improve" this by inferring where the expression ends.
 - **graphify labels callables `foo()`.** Comparing that to a parser's `foo` never matches,
   so the name tiebreak in `build-codedata.cjs` silently never fires and matching falls back
   to "widest range wins" - which still returns a function body, just the wrong one. The

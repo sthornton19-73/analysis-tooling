@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Proves the embedded blocks still parse and that a known symbol's range is real.
-// Run this BEFORE publishing — a broken </script> escape produces a blank page
+// Run this BEFORE publishing - a broken </script> escape produces a blank page
 // with no error anywhere obvious.
 //
 //   node verify.js <page.html> [file.js] [symbolName]
@@ -26,9 +26,9 @@ for (const id of ['gd', 'cd']) {
   let o;
   try { o = JSON.parse(raw); } catch (e) { ok = false; console.log(id, 'JSON PARSE FAILED:', e.message.slice(0, 140)); continue; }
 
-  if (id === 'gd') { gd = o; console.log('gd OK — nodes', o.n.length, 'edges', o.e.length); }
+  if (id === 'gd') { gd = o; console.log('gd OK - nodes', o.n.length, 'edges', o.e.length); }
   if (id === 'cd') {
-    console.log('cd OK — files', Object.keys(o.f).length, '| ranges', Object.keys(o.r).length);
+    console.log('cd OK - files', Object.keys(o.f).length, '| ranges', Object.keys(o.r).length);
     if (SPOT_FILE && SPOT_NAME && gd) {
       const qi = gd.n.findIndex((n) => n.l.replace(/\(\)$/, '') === SPOT_NAME && n.f === SPOT_FILE);
       if (qi >= 0 && o.r[qi]) {
@@ -41,5 +41,5 @@ for (const id of ['gd', 'cd']) {
     }
   }
 }
-console.log(ok ? 'ALL GOOD' : 'PROBLEM — do not publish');
+console.log(ok ? 'ALL GOOD' : 'PROBLEM - do not publish');
 process.exit(ok ? 0 : 1);

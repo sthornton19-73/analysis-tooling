@@ -20,7 +20,7 @@ const OUT = process.argv[3] || __dirname;
 const GRAPH = path.join(ROOT, 'graphify-out/graph.json');
 
 if (!fs.existsSync(GRAPH)) {
-  console.error('No graph at ' + GRAPH + ' — run /graphify first.');
+  console.error('No graph at ' + GRAPH + ' - run /graphify first.');
   process.exit(1);
 }
 const g = JSON.parse(fs.readFileSync(GRAPH, 'utf8'));
@@ -43,7 +43,7 @@ const nodes = g.nodes.map((n) => ({
     : n.file_type || 'concept',
 }));
 
-// Edges reference nodes by array index, not id — smaller and faster to look up.
+// Edges reference nodes by array index, not id - smaller and faster to look up.
 const idx = new Map(nodes.map((n, j) => [n.i, j]));
 const edges = [];
 let dropped = 0;

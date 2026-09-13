@@ -3,7 +3,7 @@
     python py-ranges.py <repo-root>   ->  {"rel/path.py": [[name, start, end], ...]} on stdout
 
 ast.end_lineno is authoritative and needs Python 3.8+. Files that fail to parse are
-skipped silently — the caller treats a missing range as "approximate", never as a guess.
+skipped silently - the caller treats a missing range as "approximate", never as a guess.
 """
 import ast, json, sys, io, os
 

@@ -21,7 +21,7 @@ for (const [id, file] of [['gd', 'graphdata.json'], ['cd', 'codedata.json']]) {
   if (!fs.existsSync(p)) { console.log('skip (missing):', file); continue; }
   // Note: '<' + backslash + '/'. Written with fromCharCode because a literal
   // '<\\/' does not survive being pasted through a shell heredoc, and the failure
-  // is silent — you get a blank page, not an error.
+  // is silent - you get a blank page, not an error.
   const safe = fs.readFileSync(p, 'utf8').split('</').join('<' + String.fromCharCode(92) + '/');
 
   const open = '<script id="' + id + '" type="application/json">';

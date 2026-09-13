@@ -16,9 +16,25 @@ server, no hosted viewer. Open it from disk and it works.
 
 ## Running it against a repository
 
+Three commands, in this order. The middle one is a Claude Code command, not a shell
+command, so the whole sequence belongs in a session started in the target repo:
+
 ```bash
-node ~/.claude/analysis-tools/run.cjs <repo-root> "<Project Name>" [spotFile] [spotSymbol]
+cd /path/to/target-repo && claude                  # 1. start the session HERE, see runbook Phase 0
 ```
+```
+/graphify . --directed                             # 2. build the graph (--directed is required)
+```
+```bash
+printf '\n# Generated analysis output\ngraphify-out/\ndocs/.analysis-cache/\n' >> .gitignore
+git check-ignore -v graphify-out/graph.json        # must print a match
+node ~/.claude/analysis-tools/run.cjs . "Project Name" src/real/file.js realFunction
+```
+
+The last two arguments are a spot check, a real file and a real function in it, both or
+neither. A run that prints `ALL GOOD` and whose spot-checked symbol ends on a closing brace
+has produced a trustworthy `docs/symbol-index.html`. That is artefact 1; artefacts 2 to 4
+are the guided phases.
 
 The full operating order, with the gates that catch a bad run, is in
 [`SESSION-RUNBOOK.md`](SESSION-RUNBOOK.md). The reference that explains why each step is
@@ -52,8 +68,9 @@ cd ~/.claude/analysis-tools && npm install
 | :--- | :--- |
 | `run.cjs` | The one-shot driver. Chains the four steps below and fails loudly. |
 | `build-graphdata.cjs` | Compacts graphify's `graph.json` into an index-based form, roughly 3x smaller. |
-| `build-codedata.cjs` | Exact source ranges via `@babel/parser` for JS/TS and the Python `ast` module. |
+| `build-codedata.cjs` | Exact source ranges: `@babel/parser` for JS/TS, plus the two extractors below. |
 | `py-ranges.py` | The Python half of the above. Stdlib only, needs 3.8+ for `end_lineno`. |
+| `php-ranges.php` | The PHP half. Core `token_get_all` only, no composer package needed. |
 | `inject.cjs` | Fills the page template's two JSON blocks, escaping `</` so the script block survives. |
 | `verify.cjs` | Re-parses both blocks and spot-checks a named symbol. Exits non-zero on failure. |
 | `standalone.cjs` | Wraps a published-artifact body fragment into a real document for local use. |
@@ -66,7 +83,12 @@ cd ~/.claude/analysis-tools && npm install
 - Node 18+
 - `graphify` (a Claude Code skill, invoked as `/graphify` inside a session)
 - Python 3.8+ if the target repository contains Python
+- A `php` binary if it contains PHP. Any 7.0+ will do; 8.1+ is needed for enum bodies.
+  Set `PHP=/path/to/php` if it is not on `PATH`.
 - `@babel/parser`, which this package declares
+
+A language with no extractor is not a failure: its symbols simply carry no range and the
+page labels them approximate. The repo still gets all four artefacts.
 
 ## House style
 

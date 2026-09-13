@@ -102,10 +102,12 @@ re-prices the deal.
 | **Node 18+** | runs the tooling | `node -v` |
 | **`@babel/parser`** | exact JS/TS function line ranges | already in `node_modules` of any Vite/React/Next app, else `npm i -D @babel/parser` |
 | **Python 3.8+** | exact Python line ranges (`ast.end_lineno`) | skip if the repo has no Python |
+| **A `php` binary** | exact PHP line ranges (`token_get_all`) | skip if the repo has no PHP; `php -v`, or set `PHP=/path/to/php` |
 | **A clean-ish `git status`** | you will be creating files; you want to see what you added | `git status` |
 
-Non-JS, non-Python repos still get artefacts 1, 3 and 4 in full; artefact 2 needs a parser
-for your language (see §9).
+A repo in a language with no extractor still gets artefacts 1, 3 and 4 in full: its symbols
+simply carry no range and the page says so. Adding an extractor for a fourth language is
+about an hour's work (see §11).
 
 ---
 
@@ -228,6 +230,9 @@ So parse properly, using parsers you already have:
 - **JS / JSX / TS / TSX** → `@babel/parser` with `errorRecovery: true`, walking for
   `FunctionDeclaration`, `ArrowFunctionExpression`, `ClassMethod` and friends
 - **Python** → the stdlib `ast` module, reading `node.end_lineno`
+- **PHP** → core `token_get_all`, counting braces from the declaration. A lexer, not a
+  parser, so it is the one extractor that has to reject work it cannot do exactly: see the
+  three PHP lexer traps in §10.
 
 Then match graph nodes to ranges by start line, with two refinements that matter:
 
@@ -447,6 +452,11 @@ works when the hosted one does not.
 | Escapes vanish when pasting a script | heredocs collapse a doubled backslash to one | build the character with `String.fromCharCode(92)` |
 | 130 unexpected files in `git status` | `graphify-out/` was not gitignored before the run | `git rm -r --cached graphify-out` |
 | Page renders unstyled from disk | saved a published artifact body fragment as-is | wrap with `standalone.cjs` |
+| PHP function ends early, at the first interpolated string | `"{$x}"` lexes as T_CURLY_OPEN plus a plain `}`, so the brace count goes negative mid-body | count T_CURLY_OPEN and T_DOLLAR_OPEN_CURLY_BRACES as openers |
+| Every PHP range off by a few lines | single-character tokens (`{`, `}`, `;`) carry no line number at all, only array tokens do | track a running line, resync it from each array token and advance it by the newlines in that token's text |
+| A PHP `use function` import appears as a function | `function` is semi-reserved: it also follows `use`, `->` and `::` | skip a keyword whose previous significant token is one of those. `static::class` is the same bug with T_CLASS |
+| An arrow function shows a wrong body | `fn($x) => $x + 1` has no closing delimiter, so any end line is a guess | emit no range; the page labels it approximate, which is the honest answer |
+| PHP enum bodies missing | the extractor is only as new as the `php` binary; 7.4 lexes `enum` as a plain identifier | run it with PHP 8.1+, or accept approximate for enums |
 
 ---
 
@@ -463,7 +473,7 @@ Only **Step 4** (exact ranges) is language-specific. Everything else is stack-ag
 | Java | JavaParser, `getRange()` |
 | Ruby | `Prism` (3.3+) or `parser` gem |
 | Rust | `syn` with the `span-locations` feature |
-| PHP | `nikic/php-parser`, `getEndLine()` |
+| PHP | core `token_get_all` - as shipped. `nikic/php-parser` gives real AST nodes and `getEndLine()`, but it is a composer install into the target repo, and this pipeline's whole premise is that it adds nothing to the repo it analyses |
 
 The shape of the output never changes: `{relPath: [[name, startLine, endLine], ...]}`.
 Write the equivalent of `py-ranges.py` for your language, emit that JSON on stdout, and

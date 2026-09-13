@@ -13,6 +13,39 @@ The output is four artefacts:
 | 3 | `docs/due-diligence.html` | Claude, guided | ~1 session |
 | 4 | README/CLAUDE.md truth pass | Claude, guided | ~20 min |
 
+---
+
+## Quick start - the whole sequence in one place
+
+If you have run this before, this is the lot. Every line is explained in the phase it
+belongs to; the phases exist because each one has a gate worth stopping at.
+
+```bash
+cd /path/to/target-repo && claude          # Phase 0: the session MUST start here
+```
+
+Then, inside that session:
+
+```
+/graphify . --directed                     # Phase 1: minutes, costs tokens
+```
+
+Back in the shell, still inside the session:
+
+```bash
+# Phase 0: ignore generated output, in the REPO-ROOT .gitignore
+printf '\n# Generated analysis output\ngraphify-out/\ndocs/.analysis-cache/\n' >> .gitignore
+git check-ignore -v graphify-out/graph.json         # must print a match, not nothing
+
+# Phase 2: the symbol index. Last two args are a REAL file and a REAL function in it.
+node ~/.claude/analysis-tools/run.cjs . "Project Name" src/real/file.js realFunction
+```
+
+That is artefact 1, and `ALL GOOD` plus a spot-checked symbol ending on a closing brace is
+the gate. Phases 3 to 6 are the guided work: README truth pass first, then the two prose
+documents, then wire the set together. They need the prompts in those phases, so do not try
+to shortcut them from here.
+
 **Before you start: no em dashes.** Every document this pipeline produces, in every
 repository, is written without the em dash character or its HTML entity form. Use a spaced
 hyphen for a break in a sentence, or recast with a comma, colon or parentheses. The rule is
@@ -108,6 +141,15 @@ normal and not a failure: import bindings (`sym`), file-level nodes (`module`) a
 LLM-inferred nodes (`concept`, `rationale`) have no code span by nature. On one repo the
 headline read "403 exact / 581 no range", which looked alarming until the breakdown
 showed every one of 399 functions matched.
+
+4. **The language-coverage lines add up.** `build-codedata.cjs` prints `js parsed ok`,
+   `py files` and `php files`. A zero against a language the repo plainly contains means
+   that extractor did not run, not that there was nothing to find: Python needs `python` on
+   `PATH`, PHP needs a `php` binary (`PHP=/path/to/php` overrides). Both degrade quietly to
+   "approximate" instead of failing the run, which is correct behaviour and also easy to
+   miss, so read the line rather than assuming. ServerlessWP is the worked example: 21 of
+   its 21 PHP functions carry exact ranges, and its 17 PHP *module* nodes carry none,
+   because a module node points at line 1, which is `<?php`.
 
 ---
 
