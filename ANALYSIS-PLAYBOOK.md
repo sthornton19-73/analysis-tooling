@@ -58,14 +58,21 @@ node ~/.claude/analysis-tools/run.cjs . "Project Name" src/main.js someFunction
 
 The last two arguments are optional: a file and a symbol you know, which `verify.cjs`
 spot-checks and prints, so you can confirm the ranges are real before trusting the page.
-Supply both or neither - `src/main.js someFunction` is a placeholder, not a literal.
+Supply both or neither - `src/main.js someFunction` is a placeholder, not a literal. The
+match is an exact string comparison against graphify's own labels, so rather than guessing
+the pair, build the page with no spot arguments and let `pick-spot.cjs` name it:
+
+```bash
+node ~/.claude/analysis-tools/pick-spot.cjs docs/symbol-index.html
+node ~/.claude/analysis-tools/verify.cjs docs/symbol-index.html <file> <symbol>
+```
 
 Output is `docs/symbol-index.html` - self-contained, open it directly. Expect:
 
 ```
 nodes 1202  edges 2047                      <- sanity-check the kinds histogram
 exact ranges 618 | no range 234             <- unmatched are labelled "approximate" in the UI
-quickSaveEvent L500-L586                    <- last line should be a closing brace
+quickSaveEvent L500-L586                    <- last line should be the symbol's real end
 ALL GOOD
 ```
 
@@ -316,7 +323,18 @@ cd OK - files 77 | ranges 618
 ALL GOOD
 ```
 
-If the last line is not a closing brace, your range matching is broken.
+If the last line is not the real end of that symbol, your range matching is broken. In a
+brace language that reads as a closing brace, as above. Python has no closer, so the last
+line is simply the last statement of the body:
+
+```
+   lodge_claims L68-L412 (345 lines)
+   first: "async def lodge_claims("
+   last : "return state"
+```
+
+Both pass. What fails is a last line that belongs to the next symbol, or a body reported
+as one or two lines when the source is plainly longer.
 
 ---
 
@@ -499,10 +517,11 @@ Non-code adjustments by stack:
 [ ] test suite runs; record the real number
 [ ] /graphify . --directed          (in Claude Code, from the repo root)
 [ ] run a cross-boundary path query; record the gap it reveals
-[ ] run.cjs . "Project Name" <file> <symbol>
+[ ] run.cjs . "Project Name"
       -> kinds histogram mostly fn/module
       -> matched vs unmatched recorded; unmatched labelled "approximate"
-      -> verify prints ALL GOOD and the symbol's last line is a closing brace
+[ ] pick-spot.cjs docs/symbol-index.html, then verify.cjs with the pair it names
+      -> verify prints ALL GOOD and the symbol's last line is that symbol's real end
 [ ] diagrams: 1 call graph, only the sequences that cross a boundary, only real state machines
 [ ] DD pack: every number sourced from a file; risk register includes the High items
 [ ] DD pack: closing section on what the repo cannot tell a buyer
@@ -542,8 +561,10 @@ entity form. A spaced hyphen, comma, colon or parentheses instead.
 **Due diligence pack**
 
 > Produce a technical due diligence pack for a potential acquirer of this application.
-> Read package.json, the infrastructure templates, the deploy script, any security docs,
-> and run the test suite - every number must come from a file you read, not an estimate.
+> Read the dependency manifest (package.json, pyproject.toml, go.mod, composer.json or
+> whatever this repo uses), the infrastructure templates, the deploy script, any security
+> docs, and run the repo's own test suite - every number must come from a file you read
+> or a command you ran, not an estimate.
 > Cover: what the system is, deployment topology, data model including what personal data
 > is held, the core architectural bet, security posture with open findings stated, quality
 > evidence with its scope limits, operations, a severity-rated risk register including

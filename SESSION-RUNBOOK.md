@@ -37,14 +37,18 @@ Back in the shell, still inside the session:
 printf '\n# Generated analysis output\ngraphify-out/\ndocs/.analysis-cache/\n' >> .gitignore
 git check-ignore -v graphify-out/graph.json         # must print a match, not nothing
 
-# Phase 2: the symbol index. Last two args are a REAL file and a REAL function in it.
-node ~/.claude/analysis-tools/run.cjs . "Project Name" src/real/file.js realFunction
+# Phase 2: the symbol index.
+node ~/.claude/analysis-tools/run.cjs . "Project Name"
+
+# Phase 2: the spot check. pick-spot.cjs names a REAL file and symbol; do not guess one.
+node ~/.claude/analysis-tools/pick-spot.cjs docs/symbol-index.html
+node ~/.claude/analysis-tools/verify.cjs docs/symbol-index.html <file> <symbol>
 ```
 
-That is artefact 1, and `ALL GOOD` plus a spot-checked symbol ending on a closing brace is
-the gate. Phases 3 to 6 are the guided work: README truth pass first, then the two prose
-documents, then wire the set together. They need the prompts in those phases, so do not try
-to shortcut them from here.
+That is artefact 1, and `ALL GOOD` plus a spot-checked symbol whose last line really is the
+end of that symbol is the gate. Phases 3 to 6 are the guided work: README truth pass first,
+then the two prose documents, then wire the set together. Drive them with the lines in
+[Driving the phases](#driving-the-phases) below.
 
 **Before you start: no em dashes.** Every document this pipeline produces, in every
 repository, is written without the em dash character or its HTML entity form. Use a spaced
@@ -52,6 +56,43 @@ hyphen for a break in a sentence, or recast with a comma, colon or parentheses. 
 easy to honour while writing and tedious to retrofit across four documents, so carry it
 from the first sentence. Full rule in [House style](#house-style) below; it is also stated
 inside the Phase 3, 4 and 5 prompts so the instruction travels with the work.
+
+---
+
+## Driving the phases
+
+Phases 0 to 2 are shell commands, above. Phases 3 to 6 are guided work, so each one is a
+line you paste into the session. Run them in order, one per session turn, and stop at each
+phase's gate rather than chaining them:
+
+```
+Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 3 against this repo.
+Use its paste-block prompt verbatim and hold to its gate.
+```
+```
+Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 4 against this repo.
+Run its cross-directory edge aggregation first, start from ~/.claude/analysis-tools/doc-shell.html,
+and hold to its gate.
+```
+```
+Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 5 against this repo.
+Gather its evidence commands first. Every number must trace to something you ran.
+```
+```
+Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 6 against this repo.
+Do not commit.
+```
+
+On Windows, `~` in a pasted prompt is not reliably expanded; use the full
+`C:\Users\<you>\.claude\analysis-tools\SESSION-RUNBOOK.md`.
+
+**Phase 3 runs first on purpose**, before 4 and 5. Both prose documents build on what
+README.md and CLAUDE.md claim, so stale facts there propagate into two polished artefacts
+and get much harder to spot.
+
+Each line names the phase rather than restating its prompt, so the prompt stays in one
+place. If you paste a phase's prompt directly instead, take it from that phase verbatim -
+the house-style clause at the end of each is load-bearing.
 
 ---
 
@@ -111,17 +152,25 @@ rather than hiding it. (§3)
 ## Phase 2 - symbol index (one command)
 
 ```bash
-node ~/.claude/analysis-tools/run.cjs . "Project Name" src/some/real/file.js someFunction
+node ~/.claude/analysis-tools/run.cjs . "Project Name"
+node ~/.claude/analysis-tools/pick-spot.cjs docs/symbol-index.html
+node ~/.claude/analysis-tools/verify.cjs docs/symbol-index.html <file> <symbol>
 ```
 
-The last two arguments are a spot check - **a real file and a real function in it**, both
-or neither. They are placeholders, not literals.
+The spot check is **a real file and a real symbol in it**. `run.cjs` accepts the pair as
+its last two arguments too, both or neither, but `verify.cjs` matches them as exact
+strings against graphify's own labels, so a pair read off the filesystem prints
+`no range found` for the wrong reason. Let `pick-spot.cjs` name the pair: it reads the
+built page, keeps only `fn` and `class` nodes that resolved to a real range, drops the
+test tree, and sorts longest body first.
 
 **Gates, in order of what they catch:**
 
 1. `ALL GOOD` printed and exit 0 - both embedded JSON blocks re-parse.
-2. The spot-checked symbol's **last line is a closing brace**. If it is not, range
-   matching is broken and nothing on the page can be trusted. (§5)
+2. The spot-checked symbol's **last line is the real end of that symbol**: a closing brace
+   in JS, TS or PHP, the last statement of the body in Python. What fails this gate is a
+   last line that belongs to the *next* symbol, or a body one line long. If it fails,
+   range matching is broken and nothing on the page can be trusted. (§5)
 3. The matched/unmatched split is *explained*, not just reported. Run this to break it
    down by node kind before you quote any ratio:
 
@@ -235,18 +284,34 @@ for f in nameOne nameTwo nameThree; do printf '%-20s %s\n' "$f" "$(grep -rln "fu
 Gather evidence first - every number in this document must come from something you ran
 or read, never from an estimate:
 
+Two of these depend on the target's language. Run the pair that matches its manifest, not
+the JS pair by reflex - quoting `package.json` for a Python repo is the kind of error the
+pack is supposed to be immune to.
+
 ```bash
-npm test 2>&1 | tail -15          # or the repo's own runner; record pass/fail and duration
 cat .github/workflows/*.yml       # what CI actually covers, and on what matrix
-grep -n '"dependencies"' -A5 package.json
 git log --oneline -5              # the commit the pack describes
+
+# tests and dependencies, by ecosystem. Record pass/fail AND duration.
+npm test 2>&1 | tail -15                 ; grep -n '"dependencies"' -A5 package.json
+pytest -q 2>&1 | tail -15                ; cat pyproject.toml requirements*.txt
+composer test 2>&1 | tail -15            ; grep -n '"require"' -A10 composer.json
+go test ./... 2>&1 | tail -15            ; cat go.mod
+cargo test 2>&1 | tail -15               ; grep -n '^\[dependencies\]' -A15 Cargo.toml
+dotnet test 2>&1 | tail -15              ; cat *.csproj
 ```
+
+If the repo has its own runner or a Makefile target, that is the authority over any of the
+above. A test command that does not exist is itself a finding: record "no runnable suite"
+rather than quietly omitting the quality section.
 
 Then paste:
 
 > Produce a technical due diligence pack for a potential acquirer of this application.
-> Read package.json, the infrastructure templates, the deploy script, any security docs,
-> and run the test suite - every number must come from a file you read, not an estimate.
+> Read the dependency manifest (package.json, pyproject.toml, go.mod, composer.json or
+> whatever this repo uses), the infrastructure templates, the deploy script, any security
+> docs, and run the repo's own test suite - every number must come from a file you read
+> or a command you ran, not an estimate.
 > Cover: what the system is, deployment topology, data model including what personal data
 > is held, the core architectural bet, security posture with open findings stated,
 > quality evidence with its scope limits, operations, a severity-rated risk register
@@ -312,7 +377,7 @@ CLAUDE.md edits that go with them:
 | Check | How |
 | :--- | :--- |
 | Generated output is ignored | `git check-ignore -v graphify-out/graph.json` prints a match |
-| Ranges are real | spot-checked symbol's last line is a closing brace |
+| Ranges are real | spot-checked symbol's last line is that symbol's real end, not the next symbol's start |
 | Unmatched symbols explained | per-kind breakdown run; `fn/ast` at ~100% |
 | Pages open from disk | `file://` in a browser, both colour schemes, ~400px wide |
 | Every number is sourced | each figure traceable to a command that was run |

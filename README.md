@@ -28,13 +28,24 @@ cd /path/to/target-repo && claude                  # 1. start the session HERE, 
 ```bash
 printf '\n# Generated analysis output\ngraphify-out/\ndocs/.analysis-cache/\n' >> .gitignore
 git check-ignore -v graphify-out/graph.json        # must print a match
-node ~/.claude/analysis-tools/run.cjs . "Project Name" src/real/file.js realFunction
+node ~/.claude/analysis-tools/run.cjs . "Project Name"
+# in windows
+node "$USERPROFILE/.claude/analysis-tools/run.cjs" . "Project Name"
+
+# then pick a real file and symbol, and run the spot check
+node ~/.claude/analysis-tools/pick-spot.cjs docs/symbol-index.html
+node ~/.claude/analysis-tools/verify.cjs docs/symbol-index.html <file> <symbol>
 ```
 
-The last two arguments are a spot check, a real file and a real function in it, both or
-neither. A run that prints `ALL GOOD` and whose spot-checked symbol ends on a closing brace
-has produced a trustworthy `docs/symbol-index.html`. That is artefact 1; artefacts 2 to 4
-are the guided phases.
+`run.cjs` also takes the file and symbol as optional fifth and sixth arguments, both or
+neither, but they have to match graphify's own labels exactly, so let `pick-spot.cjs`
+name them rather than guessing from the filesystem. A run that prints `ALL GOOD` and
+whose spot-checked symbol ends where that symbol really ends has produced a trustworthy
+`docs/symbol-index.html`. That is artefact 1; artefacts 2 to 4 are the guided phases.
+
+What "really ends" looks like depends on the language: a closing brace in JS, TS or PHP,
+the last statement of the body in Python. Either way the test is the same, that the last
+line belongs to the spot-checked symbol and not to whatever follows it.
 
 The full operating order, with the gates that catch a bad run, is in
 [`SESSION-RUNBOOK.md`](SESSION-RUNBOOK.md). The reference that explains why each step is
@@ -73,6 +84,7 @@ cd ~/.claude/analysis-tools && npm install
 | `php-ranges.php` | The PHP half. Core `token_get_all` only, no composer package needed. |
 | `inject.cjs` | Fills the page template's two JSON blocks, escaping `</` so the script block survives. |
 | `verify.cjs` | Re-parses both blocks and spot-checks a named symbol. Exits non-zero on failure. |
+| `pick-spot.cjs` | Names a real file and symbol for that spot check, read back out of the built page. |
 | `standalone.cjs` | Wraps a published-artifact body fragment into a real document for local use. |
 | `symbol-index-template.html` | The three-pane symbol index page, with empty data blocks. |
 | `doc-shell.html` | The shared stylesheet and skeleton for the two authored documents. |
