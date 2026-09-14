@@ -27,7 +27,7 @@ Two repositories are consumers today and both have a complete artefact set:
 
 | Repository | Artefacts | Notes |
 | :--- | :--- | :--- |
-| `D:\Apps\RefCoachApp` | symbol index, architecture diagrams, DD pack, playbook, runbook, doc-shell | React 19 PWA + 26 Python Lambdas. 618 of 852 code nodes matched exactly. |
+| `D:\Apps\RefCoachApp` | symbol index, architecture diagrams, technical assessment, playbook, runbook, doc-shell | React 19 PWA + 26 Python Lambdas. 618 of 852 code nodes matched exactly. |
 | `D:\apps\claude-session-dashboard` | the same set | Zero-dependency Node. 399 of 399 functions matched. Its `CLAUDE.md` forbids agent commits - honour that. |
 
 Two more repositories have been scoped but not run:

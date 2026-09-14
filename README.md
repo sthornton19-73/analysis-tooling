@@ -8,7 +8,7 @@ work.
 | :- | :--- | :--- | :--- |
 | 1 | `docs/symbol-index.html` | `run.cjs` | one command |
 | 2 | `docs/architecture-diagrams.html` | Claude, guided | ~1 session |
-| 3 | `docs/due-diligence.html` | Claude, guided | ~1 session |
+| 3 | `docs/technical-assessment.html` | Claude, guided | ~1 session |
 | 4 | README / CLAUDE.md truth pass | Claude, guided | ~20 min |
 
 Everything is a single self-contained HTML file or a markdown file. No build step, no

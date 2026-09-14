@@ -10,7 +10,7 @@ The output is four artefacts:
 | :- | :--- | :--- | :--- |
 | 1 | `docs/symbol-index.html` | one command | automated |
 | 2 | `docs/architecture-diagrams.html` | Claude, guided | ~1 session |
-| 3 | `docs/due-diligence.html` | Claude, guided | ~1 session |
+| 3 | `docs/technical-assessment.html` | Claude, guided | ~1 session |
 | 4 | README/CLAUDE.md truth pass | Claude, guided | ~20 min |
 
 ---
@@ -94,6 +94,9 @@ Each line names the phase rather than restating its prompt, so the prompt stays 
 place. If you paste a phase's prompt directly instead, take it from that phase verbatim -
 the house-style clause at the end of each is load-bearing.
 
+Coming back to a repo that already has the set, rather than running it for the first time:
+[Updating an existing analysis](#updating-an-existing-analysis).
+
 ---
 
 ## Phase 0 - preflight (2 minutes)
@@ -123,6 +126,26 @@ them in a subdirectory's silently matches nothing:
 ```bash
 printf '\n# Generated analysis output\ngraphify-out/\ndocs/.analysis-cache/\n' >> .gitignore
 git check-ignore -v graphify-out/graph.json    # must print a match, not nothing
+```
+
+**Then stop graphify indexing this pipeline's own output.** `docs/*.html` is deliberately
+*not* gitignored, because the artefacts are meant to be committed. graphify honours
+`.gitignore`, so it indexes them: the architecture document and the assessment come back
+in the next graph as `concept` and `rationale` nodes derived from prose Claude wrote, not
+from the codebase. Each run feeds the previous run's output into the next one:
+
+```bash
+printf 'docs/*.html\n' >> .graphifyignore
+```
+
+Do this before Phase 1. On a repo that has already been analysed without it, the stale
+nodes are already in the graph and only a `--force` rebuild clears them, because an
+incremental update never revisits a file the manifest has dropped:
+
+```bash
+# only needed if a previous run already indexed docs/*.html
+node -e "const g=require('./graphify-out/graph.json');console.log(g.nodes.filter(n=>/^docs\/.*\.html$/.test(n.source_file||'')).length,'nodes from generated docs')"
+/graphify . --force
 ```
 
 Then read the house rules before touching anything: `cat CLAUDE.md` in the target repo.
@@ -205,7 +228,7 @@ showed every one of 399 functions matched.
 ## Phase 3 - README truth pass (do this *before* the prose artefacts)
 
 This is out of order compared to the playbook's numbering, and deliberately so. The
-architecture and due-diligence documents are largely built on what the README and
+architecture and technical-assessment documents are largely built on what the README and
 CLAUDE.md claim. If those are stale, the stale facts propagate into two polished
 documents and become much harder to spot.
 
@@ -224,10 +247,19 @@ existed beside 275 passing tests.
 
 ---
 
-## Phase 4 - architecture diagrams
+## Phase 4 - architecture document
 
-Gather the structural facts first, so the diagram is drawn from the graph rather than
-from an impression of the code. Aggregate the real cross-directory edges:
+**Writes:** `docs/architecture-diagrams.html` (replacing it if present). No other path.
+
+This is the largest artefact. It covers how the system is **designed**: its structure, its
+flows, and the cross-cutting and non-functional concerns. How well that design actually
+holds up is Phase 5's job, not this one. The split matters, because writing the same
+concern twice is how the two documents start disagreeing with each other.
+
+### Gather the structural facts first
+
+So the document is drawn from the graph rather than from an impression of the code.
+Aggregate the real cross-directory edges:
 
 ```bash
 node -e "
@@ -243,7 +275,34 @@ Object.entries(agg).sort((x,y)=>y[1]-x[1]).slice(0,40).forEach(([k,v])=>console.
 "
 ```
 
-**Start from the shared page shell, do not re-derive the CSS.**
+That table is **required output**, not just evidence: §4 below is where it lands. Widen the
+`rel!=='calls'&&rel!=='imports'` filter if the graph carries other relation types worth
+showing, and say which you kept.
+
+Then the facts the graph cannot give you. These are starting points, not a complete
+search - adapt the patterns to the repo's stack and say what you actually ran:
+
+```bash
+# entry points: every way work enters the system
+grep -rn "@app\.\|@router\.\|app\.get(\|app\.post(\|addEventListener\|def main\|if __name__\|@task\|@schedule\|handler(" --include=* . | head -40
+ls -la serverless.yml Procfile Makefile *.tf *.yaml k8s/ .github/workflows/ 2>/dev/null
+
+# configuration and secrets: every variable, and where it is read
+grep -rn "process\.env\.\|os\.environ\|getenv\|ConfigMap\|Secret\b" . | head -40
+ls -la .env.example .env.sample config/ 2>/dev/null
+
+# infrastructure
+ls -la Dockerfile docker-compose.yml *.tf template.yml cdk.json 2>/dev/null
+
+# error handling and resilience
+grep -rn "try:\|catch (\|except \|retry\|backoff\|timeout\|circuit\|DLQ\|dead.letter" . | head -30
+
+# external integrations
+grep -rn "http[s]\?://\|boto3\|requests\.\|fetch(\|axios\|SDK\|client(" . | head -30
+```
+
+### Start from the shared page shell, do not re-derive the CSS
+
 `~/.claude/analysis-tools/doc-shell.html` is a blank document with the finished
 stylesheet already in it: theme tokens for light and dark, the typographic scale,
 the SVG element classes (`box`/`boxa`/`lnf`/`tm`/`tam`…), figures, tables, callouts,
@@ -251,46 +310,149 @@ the severity chips and the card grid. Copy it, replace the placeholders, write t
 body. It carries the width settings that took three passes to get right - the prose
 fills the column (`--measure: none`) and figures fill it with them.
 
-Then paste:
+### Sixteen sections
 
-> Run /graphify on this repo with --directed. Then trace the main end-to-end user flow
-> from the entry point through to persistence, and tell me where the call graph cannot
-> follow it and why. Build a layered call-path diagram plus sequence diagrams only for
-> the flows that cross an async or process boundary, and state machines only where a
-> genuine state machine exists. Hand-authored inline SVG, single self-contained HTML
-> file, no CDN dependencies. Do not draw flowcharts of ordinary control flow.
+Sections 1 to 7 are the structural spine, 8 to 15 the cross-cutting and non-functional
+concerns, 16 closes. **Every section is required.** Where the repo has no answer, the
+section says so plainly and in one line, and that absence is carried into Phase 5 as a
+finding. A missing capability and an omitted section must never look the same to a reader.
+
+| § | Section | Must contain |
+|---|---------|--------------|
+| 1 | **What the system is** | one paragraph a non-engineer can read; the actors; what the system is for |
+| 2 | **Business process** | the domain-level flow the system exists to serve, in business language, with the steps a person would recognise. Not control flow |
+| 3 | **Entry points** | *every* way work enters: HTTP routes, CLI commands, queue consumers, schedulers, webhooks, event handlers. An inventory, not an example |
+| 4 | **Module boundaries** | the cross-directory edge table above, plus one line per module saying what it owns |
+| 5 | **Layered call graph** | the backbone diagram, derived from the graph |
+| 6 | **Boundary-crossing flows** | sequence diagrams *only* where a flow crosses an async or process boundary, with the boundary named |
+| 7 | **State machines** | only where a genuine state machine exists; if you cannot name the states, it is not one |
+| 8 | **Security model** | trust boundaries; authentication (identity source, token lifetime); authorisation (where it is enforced, and what happens when it is not); what is deliberately public |
+| 9 | **Configuration and secrets** | every variable, where it is read, where its value comes from per environment, and **what happens when it is absent**; how secrets are stored and rotated |
+| 10 | **Infrastructure and deployment topology** | every environment, what is shared between them and what is isolated, how a deploy reaches each, with the diagram |
+| 11 | **Data and persistence** | every store, its keys and indexes, the access pattern each index serves, and **an explicit statement of what personal data is held** |
+| 12 | **External integrations** | every third-party API, queue, scheduler and object store; what breaks when each is down |
+| 13 | **Error handling and resilience** | the exception strategy; retries, timeouts, idempotency, dead letters; what is swallowed and what surfaces to a user |
+| 14 | **Availability and recovery** | the HA topology, single points of failure named plainly, backup and restore, RTO/RPO where stated |
+| 15 | **Performance and scale** | the hot paths, the concurrency model, caching, known limits and the load level at which they bite |
+| 16 | **What was deliberately not drawn** | the diagram types rejected and why |
+
+Sections 10 and 11 live here, not in Phase 5. Phase 5 references them rather than
+restating them.
+
+### Then paste
+
+> Produce an architecture document for this repo from the graph and the evidence commands
+> already run. Cover, as numbered sections: what the system is; the business process in
+> domain language; a complete inventory of entry points; module boundaries with the
+> cross-directory edge table; a layered call graph; sequence diagrams only for flows that
+> cross an async or process boundary; state machines only where genuine; the security model
+> with trust boundaries, authentication and authorisation; configuration and secrets
+> including what happens when a variable is absent; infrastructure and deployment topology;
+> data and persistence including what personal data is held; external integrations and what
+> breaks when each is down; error handling and resilience; availability and recovery with
+> single points of failure named; performance and scale with known limits; and a closing
+> section on what you deliberately did not draw.
+> Every section is required. Where this repo has no answer - no HA story, no authorisation
+> layer, no retry strategy - say so in one plain line rather than omitting the section, and
+> list those absences at the end so they can be carried into the assessment.
+> Describe how the system is designed, not how well it works; the judgement belongs in the
+> technical assessment.
+> Every claim must trace to a file you read or a command you ran. Hand-authored inline SVG,
+> no CDN dependencies. Do not draw flowcharts of ordinary control flow; the code is already
+> that flowchart.
+> Write it as a single self-contained HTML file at **docs/architecture-diagrams.html**,
+> replacing that file if it exists. Do not write to any other path.
 > House style: no em dashes anywhere in the prose, the figure labels or the captions -
 > use a spaced hyphen, comma, colon or parentheses instead.
 
 **What makes this succeed or fail:** a diagram earns its place only when it shows
 something the source cannot - usually because the relationship crosses a boundary the
 call graph cannot follow (an HTTP hop, a process spawn, a file another program owns).
-Every figure should be defensible on that test. Close the document with a short section
-naming the diagram types you *rejected* and why; it is the fastest way to show the set
-was chosen rather than generated. (§6, §7)
+Every figure should be defensible on that test. §2 and §16 are what stop the document
+becoming a pile of generated figures: the business process is the one view that no amount
+of source reading produces, and naming the rejected diagram types is the fastest way to
+show the set was chosen. (§6, §7)
 
-**Gate:** open the file from disk. Check it renders at ~400px wide and in both colour
-schemes, and that every function name in it exists - verify with a single loop rather
-than trusting recall:
+**Gates:**
+
+1. Every one of the sixteen sections is present, including the ones that say "this repo
+   has no X". The absences are listed together at the end.
+2. Every function name in the document exists:
 
 ```bash
 for f in nameOne nameTwo nameThree; do printf '%-20s %s\n' "$f" "$(grep -rln "function $f\|$f =" src | head -2 | tr '\n' ' ')"; done
 ```
 
+3. Every *edge* drawn in the call graph exists in the graph, not just every name. Names
+   that exist wired together in a way that does not is the failure the name check misses:
+
+```bash
+node -e "
+const fs=require('fs');
+const gd=JSON.parse(fs.readFileSync('docs/.analysis-cache/graphdata.json','utf8'));
+const pairs=[['caller','callee'],['other','target']];   // the edges your diagram draws
+const lbl=i=>gd.n[i].l.replace(/\(\)$/,'');
+const has=(a,b)=>gd.e.some(([s,t])=>lbl(s)===a&&lbl(t)===b);
+pairs.forEach(([a,b])=>console.log((has(a,b)?'ok   ':'MISSING ')+a+' -> '+b));
+"
+```
+
+4. **It does not overflow horizontally at a narrow viewport.** Measure this, do not eyeball
+   it. A single unbreakable token - one long identifier in inline `code` - sets a floor on
+   the page width and clips *every paragraph on the page*, which looks like a prose bug and
+   is not one:
+
+```bash
+CH="/c/Program Files/Google/Chrome/Application/chrome.exe"   # or your chrome path
+cp docs/architecture-diagrams.html /tmp/probe.html
+python - <<'PY'
+p='/tmp/probe.html'; s=open(p,encoding='utf-8').read()
+s=s.replace('</body>','<script>document.title="VP="+innerWidth+" DOCW="+document.documentElement.scrollWidth;</script></body>',1)
+open(p,'w',encoding='utf-8').write(s)
+PY
+"$CH" --headless=new --disable-gpu --virtual-time-budget=2000 --dump-dom \
+  --window-size=500,1200 "file:///tmp/probe.html" 2>/dev/null | grep -o "<title>[^<]*</title>"
+```
+
+   **`DOCW` must be less than or equal to `VP`.** Elements wider than the viewport are fine
+   *if* they sit inside `.figscroll` or `.tblwrap`, which scroll internally by design; what
+   fails the gate is the document itself being wider than the window.
+
+   Two things about this command. `--window-size=500` is the floor: headless Chrome clamps
+   the viewport to 500px, so a smaller number silently gives you 500 anyway and
+   `--force-device-scale-factor` does not move it. 500px is below the shell's 640px
+   breakpoint, so it does exercise the narrow layout. And a screenshot is for *looking* at
+   the page, not for gating it - a PNG rendered at `--window-size=400` is a 500px viewport
+   cropped to 400px, so it shows clipping whether or not any exists:
+
+```bash
+"$CH" --headless=new --disable-gpu --hide-scrollbars \
+  --screenshot=narrow.png --window-size=500,2000 "file://$PWD/docs/architecture-diagrams.html"
+```
+
+   **A failure here is almost always a `doc-shell.html` bug, not a bug in this document.**
+   Fix it in the shell in the analysis-tooling repo, `npm run install-local`, and regenerate;
+   otherwise every future document inherits it. Browser automation is not an alternative
+   route to this check: the Chrome extension rejects `file://` outright, and on a proxied
+   workstation it may never reach a local server either.
+
 ---
 
-## Phase 5 - due diligence pack
+## Phase 5 - technical assessment
+
+**Writes:** `docs/technical-assessment.html` (replacing it if present). No other path. A
+`docs/due-diligence.html` is the old name for this same artefact: delete it, do not update it.
 
 Gather evidence first - every number in this document must come from something you ran
 or read, never from an estimate:
 
 Two of these depend on the target's language. Run the pair that matches its manifest, not
 the JS pair by reflex - quoting `package.json` for a Python repo is the kind of error the
-pack is supposed to be immune to.
+assessment is supposed to be immune to.
 
 ```bash
 cat .github/workflows/*.yml       # what CI actually covers, and on what matrix
-git log --oneline -5              # the commit the pack describes
+git log --oneline -5              # the commit the assessment describes
 
 # tests and dependencies, by ecosystem. Record pass/fail AND duration.
 npm test 2>&1 | tail -15                 ; grep -n '"dependencies"' -A5 package.json
@@ -307,25 +469,37 @@ rather than quietly omitting the quality section.
 
 Then paste:
 
-> Produce a technical due diligence pack for a potential acquirer of this application.
+> Produce a technical assessment of this application for the team that owns and operates
+> it. Read docs/architecture-diagrams.html first: it documents how the system is designed,
+> and this document judges how well that design holds up. Do not restate its infrastructure,
+> data model or security sections - reference them and assess them.
 > Read the dependency manifest (package.json, pyproject.toml, go.mod, composer.json or
 > whatever this repo uses), the infrastructure templates, the deploy script, any security
 > docs, and run the repo's own test suite - every number must come from a file you read
 > or a command you ran, not an estimate.
-> Cover: what the system is, deployment topology, data model including what personal data
-> is held, the core architectural bet, security posture with open findings stated,
-> quality evidence with its scope limits, operations, a severity-rated risk register
-> including key-person risk, and what transfers on sale. End with what the repo cannot
-> tell a buyer.
-> Be blunt about weaknesses; a disclosed issue is worth more than a discovered one.
+> Cover: what the system is in two lines, the core architectural bet and what it costs,
+> security posture with open findings stated, quality evidence with its scope limits,
+> operations, and a severity-rated risk register including key-person risk.
+> Every absence the architecture document listed - no HA story, no authorisation layer, no
+> retry strategy - is an input to the risk register. Rate each one rather than repeating it.
+> End with what the repo cannot tell you, and what someone would have to ask a maintainer.
+> Be blunt about weaknesses; a problem named early is cheaper than one found late.
+> Write it as a single self-contained HTML file at **docs/technical-assessment.html**,
+> replacing that file if it exists. Do not write to any other path. If this repo still has
+> a docs/due-diligence.html, that is the old name for this same artefact: delete it rather
+> than updating it.
 > House style: no em dashes anywhere - use a spaced hyphen, comma, colon or parentheses.
 
 **Gate - the risk register is the credibility test.** If it contains no finding that
-would make the owner wince, it is marketing and a buyer will read it as such. It should
-carry at least one structural risk that cannot be engineered away, one concrete security
-finding with an honest severity (including the reasons it is *less* exploitable than it
-sounds, if that is true), and key-person risk stated plainly. Grade severity on real
-exploitability, not on how bad the category name sounds. (§8)
+would make the owner wince, it is marketing and will be read as such. It should carry at
+least one structural risk that cannot be engineered away, one concrete security finding
+with an honest severity (including the reasons it is *less* exploitable than it sounds, if
+that is true), and key-person risk stated plainly. Grade severity on real exploitability,
+not on how bad the category name sounds. (§8)
+
+**Second gate:** every absence Phase 4 listed appears in the risk register with a severity.
+An architecture document that says "no retry strategy" and an assessment whose register
+does not mention it means one of the two was written without reading the other.
 
 ---
 
@@ -335,27 +509,98 @@ Make the artefacts findable, or the next session rebuilds them from scratch:
 
 1. **Cross-link the set so one page is the entry point.** The architecture document is
    that page. It needs a `.docnav` strip directly under the masthead linking the symbol
-   index, the due-diligence pack, the playbook and the runbook; the due-diligence pack
+   index, the technical assessment, the playbook and the runbook; the technical assessment
    needs the same strip with the first card pointing back at the diagrams. Add contextual
    links too, where a reader would actually want them - the module-graph table should
    link to the symbol index, and the closing "what not to draw" section should hand the
-   commercial and operational questions to the due-diligence pack. Finish with a footer
+   risk and operational questions to the technical assessment. Finish with a footer
    line carrying all four as plain links. A nav strip alone is a table of contents; the
    contextual links are what make the set read as one document.
-2. **Check every link resolves** before you call it done. From a served copy of `docs/`:
+2. **Check every link resolves** before you call it done. These are relative links between
+   files on disk, so check them on disk - no browser and no server, both of which may be
+   unavailable on a locked-down workstation:
 
-   ```js
-   for (const h of [...new Set([...document.querySelectorAll('a[href$=".html"], a[href$=".md"]')]
-        .map(a => a.getAttribute('href')))]) console.log(h, (await fetch(h, {method:'HEAD'})).status);
+   ```bash
+   node -e "
+   const fs=require('fs'),path=require('path');
+   let bad=0;
+   for (const f of fs.readdirSync('docs').filter(f=>/\.html$/.test(f))) {
+     const html=fs.readFileSync(path.join('docs',f),'utf8');
+     const hrefs=[...new Set([...html.matchAll(/href=[\"']([^\"'#?]+\.(?:html|md))/g)].map(m=>m[1]))];
+     for (const h of hrefs) {
+       const target=path.resolve('docs',h);
+       const ok=fs.existsSync(target);
+       if(!ok) bad++;
+       console.log((ok?'ok   ':'BROKEN ')+f+'  ->  '+h);
+     }
+   }
+   process.exit(bad?1:0);
+   "
    ```
 
-3. A short **Generated documentation** section in `README.md` - a table of the files,
+   Exit 0 and no `BROKEN` lines. This is the check that catches a renamed artefact: every
+   nav strip written before a rename still points at the old filename.
+
+3. **Run the narrow-viewport gate on every generated page**, not just the architecture
+   document. The command is in Phase 4, gate 4. A shell fix regenerates into all of them,
+   so they pass or fail together.
+
+4. A short **Generated documentation** section in `README.md` - a table of the files,
    the regeneration command, and an explicit "do not hand-edit the symbol index".
-4. Four lines in `CLAUDE.md` pointing at the same, so a future agent session finds them.
-5. `git status --short` and a plain statement of what is left in the working tree.
+5. Four lines in `CLAUDE.md` pointing at the same, so a future agent session finds them.
+6. `git status --short` and a plain statement of what is left in the working tree.
 
 **Do not commit unless the repo's CLAUDE.md says you may**, and do not deploy anything
 as part of this work.
+
+---
+
+## Updating an existing analysis
+
+Coming back to a repo that already has the artefact set. The phases re-run in the same
+order; what changes is how much you need to run.
+
+**If the code has moved, refresh 1 and 2 first.** Phases 4 and 5 read
+`docs/.analysis-cache/graphdata.json`. Re-run them against a stale cache and they author a
+confident document about code that no longer exists, with nothing erroring to tell you.
+`--update` is incremental and much cheaper than the first build:
+
+```bash
+/graphify . --update
+node ~/.claude/analysis-tools/run.cjs . "Project Name"
+node ~/.claude/analysis-tools/pick-spot.cjs docs/symbol-index.html
+node ~/.claude/analysis-tools/verify.cjs docs/symbol-index.html <file> <symbol>
+```
+
+Re-run the Phase 2 gates too. A refresh can break range matching that worked before, and
+the spot-check pair you used last time may no longer be the best one, or may be gone.
+
+**Phases 4 and 5 rewrite, they do not update.** Neither has an incremental mode: each
+regenerates its whole HTML file from the graph and the evidence commands. Any hand edit
+made to `architecture-diagrams.html` or `technical-assessment.html` since the last run is
+lost. If someone has tweaked either by hand, copy it aside first, and treat the need to do
+so as a signal that the edit belongs in the prompt rather than in the output.
+
+**Phase 3 still goes first, and is the cheap one.** It edits README.md and CLAUDE.md in
+place and is genuinely idempotent: on a re-run it simply finds whatever drifted since last
+time. Phases 4 and 5 build on what those two files claim, so the ordering reason from the
+first pass has not changed.
+
+**Phase 6 is idempotent** but re-check it, because a rename or a new artefact leaves the
+nav strips pointing at the old set. Run its link check every time.
+
+So a full refresh is 1, 2, 3, 4, 5, 6. A prose-only refresh, where the code has not
+changed, is 3, 4, 5, 6.
+
+**Renamed or removed artefacts leave orphans.** Regenerating does not delete the previous
+file: the old one stays on disk, unreferenced by the new nav strips but looking current to
+anyone who opens it. Delete it as part of the re-run. Artefact 3 was named
+`docs/due-diligence.html` before it became `docs/technical-assessment.html`, so any repo
+analysed before that rename needs:
+
+```bash
+git rm docs/due-diligence.html
+```
 
 ---
 
@@ -377,12 +622,17 @@ CLAUDE.md edits that go with them:
 | Check | How |
 | :--- | :--- |
 | Generated output is ignored | `git check-ignore -v graphify-out/graph.json` prints a match |
+| Generated docs are not graphed | `.graphifyignore` carries `docs/*.html`; no graph node has a `docs/*.html` source |
 | Ranges are real | spot-checked symbol's last line is that symbol's real end, not the next symbol's start |
 | Unmatched symbols explained | per-kind breakdown run; `fn/ast` at ~100% |
-| Pages open from disk | `file://` in a browser, both colour schemes, ~400px wide |
+| Pages do not overflow | headless measure at 500px: `DOCW` <= `VP` on every generated page |
+| Both colour schemes render | headless screenshot with and without `prefers-color-scheme: dark` |
 | Every number is sourced | each figure traceable to a command that was run |
+| All 16 sections present | including the ones stating an absence; absences listed together at the end |
+| Absences reach the register | every gap artefact 2 names is rated in artefact 3, not repeated |
 | Risk register is honest | contains at least one finding the owner would rather not publish |
 | Names are real | every symbol named in prose verified to exist |
+| Edges are real | every call drawn in a diagram exists in `graphdata.json`, not just the names |
 | Set is cross-linked | nav strip on both HTML docs, contextual links in place, every href returns 200 |
 | No em dashes | a grep for U+2014 and for the HTML entity form both return 0 on every artefact (the character is deliberately not written here, so this file passes its own check) |
 | Nothing committed | `git status --short` reported, working tree left intact |

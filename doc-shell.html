@@ -114,7 +114,13 @@ code{
   font-family:"JetBrains Mono",ui-monospace,monospace;
   font-size:.84em;background:var(--surface-2);
   padding:.1em .34em;border-radius:3px;color:var(--ink);
+  /* A long identifier (_build_handle_doc_request_handler) is one unbreakable
+     token. Without this it sets a floor on the page width and every paragraph
+     on the page is clipped at a narrow viewport, not just the code. Measured:
+     document width 567px against a 500px viewport, 485px with it. */
+  overflow-wrap:anywhere;
 }
+ol.trace li{overflow-wrap:anywhere}
 a{color:var(--accent)}
 strong{font-weight:600}
 
@@ -227,7 +233,7 @@ figure{margin-top:34px;margin-bottom:34px}
   figure,.tblwrap,.skip{width:auto;margin-left:0;transform:none}
 }
 
-/* ── due-diligence additions (numbered sections, severity chips, card grid) ── */
+/* ── technical-assessment additions (numbered sections, severity chips, card grid) ── */
 .sev{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap}
 .sev.hi{background:var(--flag-soft);color:var(--flag)}
 .sev.md{background:var(--surface-2);color:var(--ink-2)}

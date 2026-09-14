@@ -6,7 +6,7 @@ How to produce, for any repo you own, the four artefacts built for Rugby Ref Coa
 |---|----------|----------|---------|
 | 1 | **Call-path diagrams** | you, future you, a new dev | "what calls what, and where does it cross a boundary?" |
 | 2 | **Symbol index** | you, a code reviewer | "where is `X` defined, what does it touch, show me the source" |
-| 3 | **Due diligence pack** | a buyer, an investor, an auditor | "what am I acquiring and what is broken?" |
+| 3 | **Technical assessment** | the owning team, a reviewer, an auditor | "what is this system's real state, and what is broken?" |
 | 4 | **A truthful README + CLAUDE.md** | everyone | "how do I run, test and deploy this?" |
 
 Everything is a **single self-contained HTML file** or a markdown file. No build step, no server,
@@ -76,7 +76,9 @@ quickSaveEvent L500-L586                    <- last line should be the symbol's 
 ALL GOOD
 ```
 
-After changing code, `/graphify . --update` then re-run `run.cjs`.
+After changing code, `/graphify . --update` then re-run `run.cjs`. That refreshes artefact
+1 only; refreshing the three guided artefacts on a repo that already has them has its own
+order and its own traps, in the runbook's **Updating an existing analysis**.
 
 `run.cjs` chains steps 3–5 below. Run them individually when something needs debugging;
 the sections that follow explain what each one is doing and why.
@@ -93,11 +95,11 @@ CloudFormation template. Test counts come from running the test runner. Line cou
 from `wc -l`. If you cannot source a number, the document says "not determined from the
 repo" - it does not guess.
 
-The corollary: **write down the bad findings**. The RefCoach DD pack opens its risk
-register with a live WAF rule that weakens eight unrelated production apps and a database
-index change running in production that is not in git. A disclosed-and-closed issue reads
-as competence. The same issue found by a buyer's engineer reads as concealment and
-re-prices the deal.
+The corollary: **write down the bad findings**. One assessment opens its risk register
+with a live WAF rule that weakens eight unrelated production apps and a database index
+change running in production that is not in git. A disclosed-and-closed issue reads as
+competence. The same issue found later by someone else reads as concealment, and costs
+far more to fix once it has been relied on.
 
 ---
 
@@ -338,34 +340,59 @@ as one or two lines when the source is plainly longer.
 
 ---
 
-## 7. Step 6 - architecture diagrams: what to draw, and what not to
+## 7. Step 6 - the architecture document: what to cover, and what not to draw
 
-Most architecture documentation fails by drawing everything. Diagrams are expensive to
-keep true, and a stale diagram actively misleads. Draw these:
+Artefact 2 is the largest of the set. It documents how the system is **designed**:
+structure, flows, and the cross-cutting and non-functional concerns. How well the design
+holds up belongs in artefact 3. Keeping that line clean is what stops the two documents
+drifting into disagreement, and it decides where each concern goes:
+
+| Concern | Artefact 2 says | Artefact 3 says |
+|---|---|---|
+| Security | the trust boundaries, where authn and authz are enforced | which of them is weak, and how exploitable |
+| Infrastructure | what exists, in which environment, and how a deploy reaches it | what it costs, what is fragile, what is undocumented |
+| Data | every store, its keys, its access patterns, what personal data is held | the exposure that creates, and the compliance gap |
+| Availability | the HA topology and where the single points of failure are | what an outage would actually cost, rated |
+| Performance | the concurrency model, caching, the known limits | whether those limits are close, and the evidence |
+
+The section list is in the runbook's Phase 4. Sections 1 to 7 are the structural spine,
+8 to 15 the cross-cutting and non-functional concerns, 16 closes.
+
+**Every section is required, including the empty ones.** Most repos have no HA story and
+many have no authorisation layer. The document says so in one plain line and carries that
+absence to artefact 3 as a finding. An omitted section and a missing capability look
+identical to a reader, and only one of them is a problem you can fix.
 
 ### Draw
 
 | Diagram | When | Why |
 |---|---|---|
 | **Layered call graph** | always - this is the backbone | the one view that generalises; derived from the graph, so it is cheap to regenerate |
+| **Business process** | always | the domain-level flow is nowhere in the source, so this is the one diagram the code cannot replace |
 | **Sequence** | only for flows crossing an async or process boundary | the call graph literally cannot express these (see §3) |
 | **State machine** | only where a genuine state machine exists | if you cannot name the states, it is not one |
-| **Deployment topology** | always, for artefact 3 | a buyer's first question is "what am I paying AWS for?" |
-| **Data model** | always, for artefact 3 | the second question is "what personal data is in there?" |
+| **Deployment topology** | always | the first question any reviewer asks is "what is actually running, and what does it cost?" |
+| **Data model** | always | the second is "what personal data is in there?" |
+| **Trust boundaries** | wherever authn or authz is enforced | a boundary you cannot draw is one nobody is checking |
 
-For RefCoach that was one call graph, **5** sequences (capture→sync, AI review with its
+One analysed repo needed one call graph, **5** sequences (capture→sync, AI review with its
 504-that-is-not-a-failure, PDF generation, share-token read, deploy) and **2** state
-machines (match lifecycle, advantage→sanction linkage).
+machines (match lifecycle, advantage→sanction linkage). Scale the sequence count to the
+number of real boundaries, not to the size of the repo.
 
 ### Do not draw
 
 - **Flowcharts of ordinary control flow.** The code is already the flowchart, and it is
-  never out of date.
+  never out of date. This is **not** the same as a business process diagram: an `if/else`
+  is in the source, whereas "a claim is lodged, then assessed, then paid or declined" is
+  not in any file and has to be drawn. Draw the process, never the control flow.
 - **A class diagram**, unless you have real inheritance. A React + Lambda app does not.
 - **An ER diagram for a key-value store.** Draw the access patterns instead - for DynamoDB,
   each table with its partition/sort key and every GSI, annotated with the query each one
   exists to serve.
 - **A diagram per module.** Nobody reads the 30th one, and all 30 rot together.
+- **A non-functional concern you have no evidence for.** An HA diagram of a system with one
+  instance is fiction. Write the one-line absence instead.
 
 ### How to draw them
 
@@ -390,26 +417,50 @@ Two width settings in it are deliberate and were arrived at the hard way: `--mea
 wrapper produces a page that uses about half its width, which is the first thing anyone
 says when they open it. If you narrow the measure, narrow the wrapper to match.
 
-## 8. Step 7 - the due diligence pack
+### A narrow-viewport failure is a shell bug, every time
 
-Nine sections. This ordering front-loads what a technical reviewer actually opens the
-document to find.
+When a generated page overflows horizontally, the instinct is to fix that page. Don't. Both
+authored documents inherit `doc-shell.html`, so a page that overflows means the shell
+overflows, and fixing one document leaves the next one to rediscover it.
+
+The failure is also badly disguised. One unbreakable token is enough to set a floor on the
+page width, and once the document is wider than the viewport, *every paragraph on the page*
+is clipped at the right edge. It reads as a prose or layout problem across the whole
+document when the actual cause is a single long identifier inside an inline `code` span.
+That is why `code` and `ol.trace li` carry `overflow-wrap:anywhere`: measured on a real
+document, the page went from 567px wide against a 500px viewport to 485px.
+
+Elements genuinely wider than the viewport are fine **if** they sit inside `.figscroll` or
+`.tblwrap`. Those scroll internally on purpose, which is how a 640px diagram lives on a
+phone. The gate is the *document* width, not the width of everything in it.
+
+So the order is: measure with the Phase 4 gate, fix `doc-shell.html` here, `npm run
+install-local`, regenerate. Never patch the symptom in the generated page, which the next
+run overwrites anyway.
+
+## 8. Step 7 - the technical assessment
+
+Six sections. This ordering front-loads what a technical reviewer actually opens the
+document to find. It is shorter than it used to be: deployment topology and the data model
+moved to artefact 2, which describes them. This document assesses them.
 
 | § | Section | Must contain |
 |---|---------|--------------|
-| 1 | **What the system is** | one paragraph a non-engineer can read; the user roles; the external dependencies and their pricing model |
-| 2 | **Deployment topology** | every environment, what is shared between them and what is isolated, with the diagram |
-| 3 | **Data model** | every table/collection, keys, indexes, **and an explicit statement of what personal data is held** |
-| 4 | **The architectural bet** | the one or two decisions that are hardest to replicate - this is the value being bought |
-| 5 | **Security posture** | every finding and its *real* status, open ones included |
-| 6 | **Quality evidence** | test count, coverage, and the **scope limits stated plainly**, not buried |
-| 7 | **Operations** | the deploy process, its prerequisites, and honestly whether it runs from a workstation |
-| 8 | **Risk register** | severity-rated, key-person risk included |
-| 9 | **What transfers on sale** | infrastructure, domains, secrets, identity pools, source, docs, third-party accounts |
+| 1 | **What the system is** | two lines, then a link to artefact 2. Do not restate it |
+| 2 | **The architectural bet** | the one or two decisions that are hardest to replicate, and hardest to reverse, with what they cost |
+| 3 | **Security posture** | every finding and its *real* status, open ones included, assessed against the trust boundaries artefact 2 drew |
+| 4 | **Quality evidence** | test count, coverage, and the **scope limits stated plainly**, not buried |
+| 5 | **Operations** | the deploy process, its prerequisites, and honestly whether it runs from a workstation |
+| 6 | **Risk register** | severity-rated, key-person risk included, **and every absence artefact 2 listed** |
+
+That last clause is the join between the two documents. Artefact 2 is required to state its
+gaps plainly (no HA story, no authorisation layer, no retry strategy); each one arrives here
+to be rated rather than repeated. An absence in one that is missing from the other means a
+document was written without reading its pair.
 
 ### The risk register is the credibility test
 
-Rate each item High / Medium / Low and be willing to write High. RefCoach's:
+Rate each item High / Medium / Low and be willing to write High. A real one:
 
 > **High** - a temporary WAF allow rule added for a penetration test is still live on a
 > shared ACL, weakening protection on eight other production apps.
@@ -420,14 +471,15 @@ Rate each item High / Medium / Low and be willing to write High. RefCoach's:
 > **Medium** - a 2,669-line file holding most application state.
 
 None of that is flattering. All of it would be found within a day by any competent
-reviewer, and finding it themselves is what makes a buyer start discounting everything
-*else* you claimed.
+reviewer, and them finding it first is what makes everything *else* the document claims
+look unreliable.
 
 ### State what the repo cannot tell them
 
-Close the document with the explicit limits: revenue, user numbers, actual hosting spend,
-customer contracts and IP assignment are **not** derivable from source and must come from
-you. Saying so prevents the reader from assuming the silence is an answer.
+Close the document with the explicit limits: real usage numbers, actual hosting spend,
+incident history, and any commercial or contractual context are **not** derivable from
+source and have to come from a maintainer. Saying so prevents the reader from assuming
+the silence is an answer.
 
 ---
 
@@ -522,9 +574,12 @@ Non-code adjustments by stack:
       -> matched vs unmatched recorded; unmatched labelled "approximate"
 [ ] pick-spot.cjs docs/symbol-index.html, then verify.cjs with the pair it names
       -> verify prints ALL GOOD and the symbol's last line is that symbol's real end
-[ ] diagrams: 1 call graph, only the sequences that cross a boundary, only real state machines
-[ ] DD pack: every number sourced from a file; risk register includes the High items
-[ ] DD pack: closing section on what the repo cannot tell a buyer
+[ ] architecture doc: all 16 sections, absences stated in one line each and listed at the end
+[ ] diagrams: 1 call graph, business process, only the sequences that cross a boundary,
+      only real state machines; every drawn edge checked against graphdata.json
+[ ] assessment: every number sourced from a file; risk register includes the High items
+[ ] assessment: every absence the architecture doc listed is rated, not restated
+[ ] assessment: closing section on what the repo cannot tell you
 [ ] standalone.cjs for every published artefact
 [ ] README + CLAUDE.md corrected against what you just verified
 [ ] commit docs/
@@ -539,14 +594,29 @@ Paste these into Claude Code from the target repo root, in order.
 **House style applies to all four: no em dashes**, neither the character nor the HTML
 entity form. A spaced hyphen, comma, colon or parentheses instead.
 
-**Graph and diagrams**
+**Architecture document**
 
-> Run /graphify on this repo with --directed. Then trace the main end-to-end user flow
-> from the UI entry point through to persistence, and tell me where the call graph cannot
-> follow it and why. Build a layered call-path diagram plus sequence diagrams only for the
-> flows that cross an async or process boundary, and state machines only where a genuine
-> state machine exists. Hand-authored inline SVG, single self-contained HTML file, no CDN
-> dependencies. Do not draw flowcharts of ordinary control flow.
+> Produce an architecture document for this repo from the graph and the evidence commands
+> already run. Cover, as numbered sections: what the system is; the business process in
+> domain language; a complete inventory of entry points; module boundaries with the
+> cross-directory edge table; a layered call graph; sequence diagrams only for flows that
+> cross an async or process boundary; state machines only where genuine; the security model
+> with trust boundaries, authentication and authorisation; configuration and secrets
+> including what happens when a variable is absent; infrastructure and deployment topology;
+> data and persistence including what personal data is held; external integrations and what
+> breaks when each is down; error handling and resilience; availability and recovery with
+> single points of failure named; performance and scale with known limits; and a closing
+> section on what you deliberately did not draw.
+> Every section is required. Where this repo has no answer - no HA story, no authorisation
+> layer, no retry strategy - say so in one plain line rather than omitting the section, and
+> list those absences at the end so they can be carried into the assessment.
+> Describe how the system is designed, not how well it works; the judgement belongs in the
+> technical assessment.
+> Every claim must trace to a file you read or a command you ran. Hand-authored inline SVG,
+> no CDN dependencies. Do not draw flowcharts of ordinary control flow; the code is already
+> that flowchart.
+> Write it as a single self-contained HTML file at **docs/architecture-diagrams.html**,
+> replacing that file if it exists. Do not write to any other path.
 > No em dashes anywhere in the prose, labels or captions.
 
 **Symbol index**
@@ -558,18 +628,27 @@ entity form. A spaced hyphen, comma, colon or parentheses instead.
 > labelled "approximate" in the UI. Escape `</` inside the embedded JSON and verify both
 > blocks re-parse before publishing. No em dashes in any page copy you write.
 
-**Due diligence pack**
+**Technical assessment**
 
-> Produce a technical due diligence pack for a potential acquirer of this application.
+> Produce a technical assessment of this application for the team that owns and operates
+> it. Read the architecture document first: it describes how the system is designed, and
+> this document judges how well that design holds up. Do not restate its infrastructure,
+> data model or security sections - reference them and assess them.
 > Read the dependency manifest (package.json, pyproject.toml, go.mod, composer.json or
 > whatever this repo uses), the infrastructure templates, the deploy script, any security
 > docs, and run the repo's own test suite - every number must come from a file you read
 > or a command you ran, not an estimate.
-> Cover: what the system is, deployment topology, data model including what personal data
-> is held, the core architectural bet, security posture with open findings stated, quality
-> evidence with its scope limits, operations, a severity-rated risk register including
-> key-person risk, and what transfers on sale. End with what the repo cannot tell a buyer.
-> Be blunt about weaknesses; a disclosed issue is worth more than a discovered one.
+> Cover: what the system is in two lines, the core architectural bet and what it costs,
+> security posture with open findings stated, quality evidence with its scope limits,
+> operations, and a severity-rated risk register including key-person risk.
+> Every absence the architecture document listed is an input to the risk register. Rate
+> each one rather than repeating it.
+> End with what the repo cannot tell you, and what someone would have to ask a maintainer.
+> Be blunt about weaknesses; a problem named early is cheaper than one found late.
+> Write it as a single self-contained HTML file at **docs/technical-assessment.html**,
+> replacing that file if it exists. Do not write to any other path. If this repo still has
+> a docs/due-diligence.html, that is the old name for this same artefact: delete it rather
+> than updating it.
 > No em dashes anywhere.
 
 **README truth pass**

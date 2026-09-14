@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 A repo-agnostic documentation pipeline. It turns a graphify knowledge graph of any
 repository into a symbol index with exact source ranges, and guides a session through
-producing architecture diagrams, a technical due diligence pack and a README truth pass.
+producing an architecture document, a technical assessment and a README truth pass.
 
 `README.md` is the overview. `SESSION-RUNBOOK.md` is the operating order for running the
 pipeline against a target repository. `ANALYSIS-PLAYBOOK.md` is the reference that explains
