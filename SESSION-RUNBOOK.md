@@ -62,8 +62,10 @@ inside the Phase 3, 4 and 5 prompts so the instruction travels with the work.
 ## Driving the phases
 
 Phases 0 to 2 are shell commands, above. Phases 3 to 6 are guided work, so each one is a
-line you paste into the session. Run them in order, one per session turn, and stop at each
-phase's gate rather than chaining them:
+line you paste into the session. Run them in order, **one per fresh session**, and stop at
+each phase's gate rather than chaining them. A session reuses what it has already read, so
+one that has just executed a phase will tend to re-execute its remembered version of the
+next one:
 
 ```
 Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 3 against this repo.
@@ -81,6 +83,28 @@ Gather its evidence commands first. Every number must trace to something you ran
 ```
 Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 6 against this repo.
 Do not commit.
+```
+
+**Or drive the lot with one command.** `pipeline.cjs` runs the shell phases directly, spawns
+a separate `claude -p` session per guided phase, and runs `gates.cjs` between each, stopping
+rather than feeding a bad artefact to the phase that reads it:
+
+```bash
+node ~/.claude/analysis-tools/pipeline.cjs . "Project Name" --dry-run   # see the plan
+node ~/.claude/analysis-tools/pipeline.cjs . "Project Name"             # phases 2 to 6
+node ~/.claude/analysis-tools/pipeline.cjs . "Project Name" --from 4 --resume
+```
+
+A process per phase is the point: it is what makes the stale-spec failure structurally
+impossible rather than something the prompt above has to warn against. Phases 0 and 1 are
+asserted rather than performed, because the graph build is a slash command needing a model
+and cannot be driven from a shell. Phase 7 refuses to run without `--allow-share`.
+
+Phase 7 is optional, and runs only when the set is going to someone outside the team:
+
+```
+Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 7 against this repo.
+Review the content that is about to leave the building before doing the mechanics.
 ```
 
 On Windows, `~` in a pasted prompt is not reliably expanded; use the full
@@ -262,22 +286,28 @@ So the document is drawn from the graph rather than from an impression of the co
 Aggregate the real cross-directory edges:
 
 ```bash
-node -e "
-const fs=require('fs');
-const gd=JSON.parse(fs.readFileSync('docs/.analysis-cache/graphdata.json','utf8'));
-const dirOf=f=>{const p=String(f||'').split('/');return p.length>2?p.slice(0,2).join('/'):(p[0]||'?');};
-const agg={};
-gd.e.forEach(([s,t,rel])=>{const a=gd.n[s],b=gd.n[t];if(!a||!b)return;
-  if(rel!=='calls'&&rel!=='imports')return;
-  const da=dirOf(a.f),db=dirOf(b.f); if(!da||!db||da===db)return;
-  const k=da+' -> '+db+' ['+rel+']'; agg[k]=(agg[k]||0)+1;});
-Object.entries(agg).sort((x,y)=>y[1]-x[1]).slice(0,40).forEach(([k,v])=>console.log(String(v).padStart(4),k));
-"
+node ~/.claude/analysis-tools/modules.cjs .          # --under src by default
 ```
 
-That table is **required output**, not just evidence: §4 below is where it lands. Widen the
-`rel!=='calls'&&rel!=='imports'` filter if the graph carries other relation types worth
-showing, and say which you kept.
+Both tables it prints are **required output**, not just evidence: §4 below is where they
+land, and so does the grouping rule it states on its second line.
+
+A filesystem has no modules, so this groups by path prefix, and **the grouping rule is the
+whole story**. A fixed depth does not work. At depth 2 a 78-file subsystem sat inside
+`src/workflow` as one row next to a single-file directory, which made the section read as
+though the repo were laid out strangely when the real problem was the grouping. So depth
+varies: a group over 25 files splits one level deeper, and only children of 8 or more files
+are promoted, which keeps three-file directories with their parent instead of littering the
+table. Tune with `--big` and `--min-child` if a repo needs it, and say what you used.
+
+Report the **file counts** alongside the edges. Without them a reader cannot tell a
+subsystem from a leaf directory and every row looks like a peer of every other, which is
+the single thing most likely to make this section confusing to someone who does not know
+the codebase.
+
+It also prints two-way pairs. A cycle is what a layered diagram cannot show and what a
+reader most wants flagged, so name them in the prose rather than leaving the reader to spot
+them in the table.
 
 Then the facts the graph cannot give you. These are starting points, not a complete
 search - adapt the patterns to the repo's stack and say what you actually ran:
@@ -322,7 +352,7 @@ finding. A missing capability and an omitted section must never look the same to
 | 1 | **What the system is** | one paragraph a non-engineer can read; the actors; what the system is for |
 | 2 | **Business process** | the domain-level flow the system exists to serve, in business language, with the steps a person would recognise. Not control flow |
 | 3 | **Entry points** | *every* way work enters: HTTP routes, CLI commands, queue consumers, schedulers, webhooks, event handlers. An inventory, not an example |
-| 4 | **Module boundaries** | the cross-directory edge table above, plus one line per module saying what it owns |
+| 4 | **Module boundaries** | both tables from `modules.cjs`: the module list **with its file counts**, and the cross-module edges. State the grouping rule verbatim, name the two-way pairs, and give one line per module saying what it owns |
 | 5 | **Layered call graph** | the backbone diagram, derived from the graph |
 | 6 | **Boundary-crossing flows** | sequence diagrams *only* where a flow crosses an async or process boundary, with the boundary named |
 | 7 | **State machines** | only where a genuine state machine exists; if you cannot name the states, it is not one |
@@ -343,8 +373,9 @@ restating them.
 
 > Produce an architecture document for this repo from the graph and the evidence commands
 > already run. Cover, as numbered sections: what the system is; the business process in
-> domain language; a complete inventory of entry points; module boundaries with the
-> cross-directory edge table; a layered call graph; sequence diagrams only for flows that
+> domain language; a complete inventory of entry points; module boundaries carrying both
+> tables from modules.cjs, their file counts, the grouping rule stated verbatim and the
+> two-way pairs named; a layered call graph; sequence diagrams only for flows that
 > cross an async or process boundary; state machines only where genuine; the security model
 > with trust boundaries, authentication and authorisation; configuration and secrets
 > including what happens when a variable is absent; infrastructure and deployment topology;
@@ -555,6 +586,87 @@ as part of this work.
 
 ---
 
+## Phase 7 - share copies (only when sending the set outside the team)
+
+**Writes:** `docs/architecture-diagrams.share.html` and
+`docs/technical-assessment.share.html`. The originals are never modified.
+
+The symbol index cannot be shared. It embeds the analysed repository's entire source,
+hundreds of files, in two JSON blocks; that is the point of it and the reason it is 9MB.
+So a set sent to anyone who should not have the source is the two authored documents only,
+and every reference to the third has to go with it, or the recipient is left following
+links to a page they do not have.
+
+**A share copy has no internal links at all, not even to its pair.** These are pasted into
+Confluence, or a wiki, or an email, as separate standalone pages. A relative `href` to
+`technical-assessment.share.html` resolves against whatever URL the page ends up at and
+breaks, so the only safe number of internal links is zero. That means the `.docnav` strip
+and the footer link row come out entirely rather than being retargeted: a nav strip with
+nothing in it is worse than no nav strip. Each copy has to stand completely alone.
+
+**This is the one phase whose output leaves the building. Review the content before the
+mechanics.** Both documents are written to be blunt: the assessment carries open security
+findings with their file and line, the architecture document names internal systems,
+environments and data stores, and both may state plainly what personal data accumulates
+where. That candour is correct for the owning team and may be entirely wrong for the
+recipient. Read both in full and decide per finding, per name. Nothing below substitutes
+for that read.
+
+```bash
+# what you are about to send, before you send it
+grep -rn "password\|secret\|token\|api[_-]key\|\.internal\|10\.\|192\.168\." docs/*.share.html | head -40
+```
+
+Then paste:
+
+> Produce share copies of docs/architecture-diagrams.html and
+> docs/technical-assessment.html as docs/architecture-diagrams.share.html and
+> docs/technical-assessment.share.html. Do not modify the originals.
+> Each copy must be completely standalone, because they are pasted into Confluence as
+> separate pages where any relative link breaks. Remove **every** internal link, not just
+> the broken ones: delete the .docnav strip and the footer link row outright rather than
+> emptying or retargeting them, drop every link to the symbol index, and drop every link
+> between the two documents. The result must contain zero hrefs to a .html or .md file.
+> Where prose treated another document as something the reader can open, reword it to name
+> the document in plain text instead, so the fact survives without the link. Do not leave a
+> dangling sentence.
+> Add one closing line to each saying this is a standalone share copy, that the browsable
+> symbol index is omitted because it embeds the repository's source, and naming the
+> companion document in plain text so a reader knows it exists.
+> Change nothing else. Same sections, same findings, same numbers.
+> House style: no em dashes - use a spaced hyphen, comma, colon or parentheses.
+
+**Why `.share.html` and not `docs/share/`.** `.graphifyignore` carries `docs/*.html`, and
+gitignore-style globs do not cross directory boundaries, so a subfolder slips straight past
+that pattern and the share copies end up in the next graph build. The suffix keeps them
+covered by the rule that already exists.
+
+**Gates:**
+
+1. **Originals untouched.** Their symbol-index references and nav strips are all still present.
+2. **Zero internal links.** No href to any `.html` or `.md` file, and no `.docnav` strip.
+   Not "links that resolve": none at all. A relative link that works in `docs/` still breaks
+   once the page is a Confluence page.
+3. **No dangling references.** Zero mentions of the symbol index by filename in either copy.
+4. **Still self-contained.** No scripts, no local images; the fonts stylesheet is the only
+   outbound request. A share copy that needs a file the recipient does not have is broken
+   in a way that only shows up on their machine.
+5. **Content intact.** Same section counts as the originals, same findings, zero em dashes.
+6. **Narrow viewport**, as Phase 4 gate 4.
+
+```bash
+grep -c "symbol-index\|docnav" docs/architecture-diagrams.html   # unchanged, originals keep theirs
+grep -o 'href="[^"]*\.\(html\|md\)"' docs/*.share.html           # must print nothing
+grep -c "docnav\|<script" docs/*.share.html                      # 0
+```
+
+**They are not gitignored.** Share copies show as untracked and a `git add .` commits them,
+which puts a document written for an outside reader into the repository permanently. Decide
+deliberately: add `docs/*.share.html` to `.gitignore`, or write them somewhere outside the
+repo entirely.
+
+---
+
 ## Updating an existing analysis
 
 Coming back to a repo that already has the artefact set. The phases re-run in the same
@@ -574,6 +686,48 @@ node ~/.claude/analysis-tools/verify.cjs docs/symbol-index.html <file> <symbol>
 
 Re-run the Phase 2 gates too. A refresh can break range matching that worked before, and
 the spot-check pair you used last time may no longer be the best one, or may be gone.
+
+**A graph rebuild must come before the authoring phases, never after.** The rule above is
+usually read as "only if the code changed", but any reason to rebuild is the same reason:
+cleaning stale nodes out, adding a `.graphifyignore`, recovering from a bad run. Rebuild
+afterwards and both authored documents were written from a graph that no longer exists, so
+both have to be written again. Do it first and they are written once.
+
+**Identical numbers after a rebuild are a symptom, not reassurance.** `run.cjs` does not
+build the graph; it compacts `graphify-out/graph.json` into `graphdata.json`. Point it at a
+graph that did not actually change and every downstream figure is unchanged *by
+construction*, while `verify.cjs` still prints `ALL GOOD` because it only checks that the
+embedded JSON re-parses and that one named symbol has a real range. Neither knows the graph
+is stale. Check the timestamp, which is the only thing that tells you:
+
+```bash
+ls -l graphify-out/graph.json        # must be newer than the rebuild you just ran
+```
+
+Two ways this happens. `/graphify . --force` is a **slash command**: pasted at a shell
+prompt it does nothing visible, and the next command runs against the old graph. And a
+`--force` rebuild on a large repo takes minutes, so starting `run.cjs` too early reads a
+`graph.json` that is still being written.
+
+**Phases 4 and 5 are coupled.** Phase 5 reads artefact 2 and rates every absence it lists,
+so you cannot refresh one without the other. Re-run Phase 4 alone and you get an
+architecture document naming gaps that the untouched assessment's risk register never
+mentions, which is precisely the state Phase 5's second gate exists to fail. Always 4 then
+5 then 6.
+
+**A phase whose spec has changed needs a fresh session, not a re-prompt.** Sessions reuse
+what they have already read. If a phase is re-run in a session that read an older version
+of this file, it will re-execute the older version and the output will look like a
+plausible success: correct shape, wrong spec. Re-prompting the same session reproduces it.
+Start a new session, and make the invocation self-checking by naming something the current
+spec contains:
+
+```
+Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 4 against this repo.
+Re-read the file now rather than relying on anything you already know about it. Phase 4
+specifies sixteen required sections. If your reading has fewer, you have stale content:
+stop and say so.
+```
 
 **Phases 4 and 5 rewrite, they do not update.** Neither has an incremental mode: each
 regenerates its whole HTML file from the graph and the evidence commands. Any hand edit
@@ -619,6 +773,23 @@ CLAUDE.md edits that go with them:
 
 ## Acceptance checklist
 
+Most of this is runnable. `gates.cjs` carries every row below that a machine can decide:
+
+```bash
+node ~/.claude/analysis-tools/gates.cjs .        # all phases, exits non-zero on failure
+node ~/.claude/analysis-tools/gates.cjs . 4      # one phase
+```
+
+It reports `pass`, `fail`, `warn` and `skip`. `warn` is a heuristic that cannot be certain
+and wants a human; `skip` is an artefact that does not exist yet, which is not a failure
+mid-run. Run it after every phase rather than once at the end, so a bad artefact never
+reaches the phase that reads it.
+
+**A green run is not the document being good.** The rows it cannot check are the ones that
+decide whether the set is worth anything: whether the risk register contains a finding the
+owner would rather not publish, whether every number traces to a command that was run,
+whether each diagram earns its place. A gate runner enforces shape, never honesty.
+
 | Check | How |
 | :--- | :--- |
 | Generated output is ignored | `git check-ignore -v graphify-out/graph.json` prints a match |
@@ -636,12 +807,13 @@ CLAUDE.md edits that go with them:
 | Set is cross-linked | nav strip on both HTML docs, contextual links in place, every href returns 200 |
 | No em dashes | a grep for U+2014 and for the HTML entity form both return 0 on every artefact (the character is deliberately not written here, so this file passes its own check) |
 | Nothing committed | `git status --short` reported, working tree left intact |
+| Share copies reviewed | if Phase 7 ran: read in full before sending; no symbol-index references; not accidentally committed |
 
 ---
 
 ## When it goes wrong
 
-`ANALYSIS-PLAYBOOK.md` §10 collects every trap with its symptom. The three that cost the
+`ANALYSIS-PLAYBOOK.md` §11 collects every trap with its symptom. The three that cost the
 most time, because all three fail *silently*:
 
 - **A literal `</` inside embedded JSON** ends the `<script>` block. Result is a blank

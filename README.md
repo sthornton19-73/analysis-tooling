@@ -1,8 +1,8 @@
 # Analysis Tooling
 
 A repo-agnostic documentation pipeline. Point it at any repository and it produces four
-artefacts, two of them automatically and two with a Claude Code session doing the judgement
-work.
+artefacts: one generated deterministically from a parser, three authored by a Claude Code
+session doing the judgement work against a runbook of prompts and gates.
 
 | # | Artefact | Produced by | Effort |
 | :- | :--- | :--- | :--- |
@@ -16,41 +16,84 @@ server, no hosted viewer. Open it from disk and it works.
 
 ## Running it against a repository
 
-Three commands, in this order. The middle one is a Claude Code command, not a shell
-command, so the whole sequence belongs in a session started in the target repo:
+Lines starting with `/` are typed inside a Claude Code session. Everything else is a shell.
+
+### A repo that has never been analysed
 
 ```bash
-cd /path/to/target-repo && claude                  # 1. start the session HERE, see runbook Phase 0
-```
-```
-/graphify . --directed                             # 2. build the graph (--directed is required)
+cd /path/to/target-repo && claude          # start the session HERE. This cannot be fixed later
 ```
 ```bash
 printf '\n# Generated analysis output\ngraphify-out/\ndocs/.analysis-cache/\n' >> .gitignore
-git check-ignore -v graphify-out/graph.json        # must print a match
-node ~/.claude/analysis-tools/run.cjs . "Project Name"
-# in windows
-node "$USERPROFILE/.claude/analysis-tools/run.cjs" . "Project Name"
-
-# then pick a real file and symbol, and run the spot check
-node ~/.claude/analysis-tools/pick-spot.cjs docs/symbol-index.html
-node ~/.claude/analysis-tools/verify.cjs docs/symbol-index.html <file> <symbol>
+printf 'docs/*.html\n' >> .graphifyignore
+```
+```
+/graphify . --directed                     # minutes, costs tokens. --directed is required
+```
+```bash
+node ~/.claude/analysis-tools/pipeline.cjs . "Project Name" --from 0 --dry-run
+node ~/.claude/analysis-tools/pipeline.cjs . "Project Name" --from 0
 ```
 
-`run.cjs` also takes the file and symbol as optional fifth and sixth arguments, both or
-neither, but they have to match graphify's own labels exactly, so let `pick-spot.cjs`
-name them rather than guessing from the filesystem. A run that prints `ALL GOOD` and
-whose spot-checked symbol ends where that symbol really ends has produced a trustworthy
-`docs/symbol-index.html`. That is artefact 1; artefacts 2 to 4 are the guided phases.
+`.graphifyignore` does nothing on a fresh repo, because `docs/` does not exist yet. Add it
+anyway: it is what stops the *second* build indexing the first build's output and feeding
+this pipeline its own prose back as graph nodes.
 
-What "really ends" looks like depends on the language: a closing brace in JS, TS or PHP,
-the last statement of the body in Python. Either way the test is the same, that the last
-line belongs to the spot-checked symbol and not to whatever follows it.
+### A repo that already has the set
 
-The full operating order, with the gates that catch a bad run, is in
-[`SESSION-RUNBOOK.md`](SESSION-RUNBOOK.md). The reference that explains why each step is
-the way it is, plus every trap encountered building this, is in
-[`ANALYSIS-PLAYBOOK.md`](ANALYSIS-PLAYBOOK.md).
+The difference is entirely at the front. **Refresh the graph before the authoring phases,
+never after**, or both authored documents are written from a graph you then replace, and
+both have to be written again.
+
+```bash
+node ~/.claude/analysis-tools/gates.cjs .  # read the Phase 0 and 1 rows first
+```
+```
+/graphify . --update                       # code has changed
+/graphify . --force                        # clearing stale nodes, or recovering from a bad run
+```
+```bash
+ls -l graphify-out/graph.json              # the timestamp MUST have moved before continuing
+git rm docs/due-diligence.html             # only if a renamed orphan is still there
+node ~/.claude/analysis-tools/pipeline.cjs . "Project Name" --from 2 --resume
+```
+
+That timestamp check is not ceremony. `run.cjs` compacts the graph rather than building it,
+so pointed at an unchanged or half-written `graph.json` every downstream number is identical
+*by construction*, and `verify.cjs` still prints `ALL GOOD` because it only checks that the
+embedded JSON re-parses. Identical counts after a rebuild are the symptom, not the reassurance.
+
+### Either way
+
+`pipeline.cjs` runs the shell phases directly, spawns a separate `claude -p` session per
+guided phase, and runs `gates.cjs` between each, stopping rather than feeding a bad artefact
+to the phase that reads it. A process per phase is the point: a session reuses what it has
+already read, so one that has just executed a phase tends to re-execute its remembered
+version of the next one, which fails as a *plausible success* with the correct shape and the
+wrong spec.
+
+Phases 0 and 1 are asserted rather than performed, because the graph build is a slash
+command needing a model.
+
+**Phase 7 is separate and opt-in**, and refuses to run without `--allow-share`. It writes
+`*.share.html` copies of the two authored documents for sending outside the team: the symbol
+index cannot go, because it embeds the repository's entire source. Those copies carry **zero
+internal links**, not merely working ones. They are pasted into Confluence or a wiki as
+standalone pages, where a relative href resolves against a base that no longer exists, so
+the nav strip and footer links come out whole rather than being retargeted. It is also the
+only output that leaves the building, so the phase leads with reading both documents in full
+before it touches the mechanics.
+
+To drive a phase by hand instead, or to see what each gate means, use
+[`SESSION-RUNBOOK.md`](SESSION-RUNBOOK.md).
+
+**A green run means not-obviously-broken, never good.** The gates decide shape. Whether the
+risk register contains a finding the owner would rather not publish, whether every number
+traces to a command that was run, whether each diagram earns its place: none of that is
+assertable, and it is what decides whether the set is worth anything. Read the documents.
+
+The reference that explains why each step is the way it is, plus every trap encountered
+building this, is in [`ANALYSIS-PLAYBOOK.md`](ANALYSIS-PLAYBOOK.md).
 
 ## This repo versus the installed copy
 
@@ -77,7 +120,8 @@ cd ~/.claude/analysis-tools && npm install
 
 | File | Role |
 | :--- | :--- |
-| `run.cjs` | The one-shot driver. Chains the four steps below and fails loudly. |
+| `pipeline.cjs` | Drives the whole runbook: shell phases directly, guided phases as separate `claude -p` sessions, gates between each. |
+| `run.cjs` | The one-shot driver for artefact 1. Chains the four steps below and fails loudly. |
 | `build-graphdata.cjs` | Compacts graphify's `graph.json` into an index-based form, roughly 3x smaller. |
 | `build-codedata.cjs` | Exact source ranges: `@babel/parser` for JS/TS, plus the two extractors below. |
 | `py-ranges.py` | The Python half of the above. Stdlib only, needs 3.8+ for `end_lineno`. |
@@ -85,6 +129,8 @@ cd ~/.claude/analysis-tools && npm install
 | `inject.cjs` | Fills the page template's two JSON blocks, escaping `</` so the script block survives. |
 | `verify.cjs` | Re-parses both blocks and spot-checks a named symbol. Exits non-zero on failure. |
 | `pick-spot.cjs` | Names a real file and symbol for that spot check, read back out of the built page. |
+| `gates.cjs` | Every machine-checkable gate in the runbook, in one runnable place. Exits non-zero on failure. |
+| `modules.cjs` | Module boundaries for the architecture document: adaptive path-prefix grouping, file counts, cross-module edges, two-way pairs. |
 | `standalone.cjs` | Wraps a published-artifact body fragment into a real document for local use. |
 | `symbol-index-template.html` | The three-pane symbol index page, with empty data blocks. |
 | `doc-shell.html` | The shared stylesheet and skeleton for the two authored documents. |

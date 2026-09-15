@@ -18,8 +18,8 @@ const DEST = path.join(os.homedir(), '.claude', 'analysis-tools');
 // node_modules is installed at the destination, not copied: the parser is a
 // platform-specific dependency and a copied tree goes stale against package.json.
 const FILES = [
-    'run.cjs', 'build-graphdata.cjs', 'build-codedata.cjs', 'inject.cjs',
-    'verify.cjs', 'pick-spot.cjs', 'standalone.cjs', 'py-ranges.py', 'php-ranges.php',
+    'pipeline.cjs', 'run.cjs', 'build-graphdata.cjs', 'build-codedata.cjs', 'inject.cjs',
+    'verify.cjs', 'pick-spot.cjs', 'gates.cjs', 'modules.cjs', 'standalone.cjs', 'py-ranges.py', 'php-ranges.php',
     'symbol-index-template.html', 'doc-shell.html',
     'ANALYSIS-PLAYBOOK.md', 'SESSION-RUNBOOK.md',
     'package.json', 'package-lock.json',

@@ -21,7 +21,7 @@ every project and nothing is vendored into the repos it analyses.
 ## Quick start on a new repo
 
 Artefact 2 (the symbol index) is fully automated. Artefacts 1, 3 and 4 are judgement work
-and need Claude - the prompts are in §13.
+and need Claude - the prompts are in §14.
 
 The toolkit is installed **once per machine**, not once per repo, at
 `~/.claude/analysis-tools/`. It carries its own `@babel/parser`, so it works against a
@@ -116,7 +116,7 @@ far more to fix once it has been relied on.
 
 A repo in a language with no extractor still gets artefacts 1, 3 and 4 in full: its symbols
 simply carry no range and the page says so. Adding an extractor for a fourth language is
-about an hour's work (see §11).
+about an hour's work (see §12).
 
 ---
 
@@ -241,7 +241,7 @@ So parse properly, using parsers you already have:
 - **Python** → the stdlib `ast` module, reading `node.end_lineno`
 - **PHP** → core `token_get_all`, counting braces from the declaration. A lexer, not a
   parser, so it is the one extractor that has to reject work it cannot do exactly: see the
-  three PHP lexer traps in §10.
+  three PHP lexer traps in §11.
 
 Then match graph nodes to ranges by start line, with two refinements that matter:
 
@@ -510,7 +510,45 @@ works when the hosted one does not.
 
 ---
 
-## 10. Gotchas, collected
+## 10. Step 9 - share copies, and why they carry no links
+
+Sending the set outside the team is a different problem from publishing it, and the runbook
+gives it its own phase because two things about it are counter-intuitive.
+
+**The symbol index cannot go.** It embeds the analysed repository's entire source in two
+JSON blocks, which is the whole point of it and the reason it is measured in megabytes. So
+what travels is the two authored documents, and every reference to the third has to travel
+with it or the recipient follows links to a page they do not have.
+
+**A share copy has zero internal links, not zero broken ones.** This is the rule that gets
+got wrong, because the obvious fix looks like retargeting the cross-links onto the
+`.share.html` filenames so the pair still works as a set. That holds only while both files
+sit in the same directory. The moment each becomes a Confluence page, a wiki page or an
+email, a relative `href` resolves against a base that no longer exists and dies. Testing
+the links in `docs/` proves nothing about where the page actually lands, so a link checker
+that passes is actively misleading here. The `.docnav` strip and the footer link row come
+out whole rather than being emptied or repointed: a nav strip with nothing in it is worse
+than no nav strip.
+
+What survives is the *fact*, not the link. Where prose treated the other document as
+something the reader could open, it names it in plain text instead, and a closing line
+says the copy is standalone, names its companion, and explains the symbol index's absence.
+A reader should never be left wondering about a third document the pair keeps nearly
+mentioning.
+
+**Name them `*.share.html`, never `docs/share/`.** `.graphifyignore` carries `docs/*.html`,
+and gitignore-style globs do not cross directory boundaries, so a subfolder slips past that
+pattern and the share copies land in the next graph build. The suffix keeps them covered by
+the rule that already exists.
+
+**Read them before sending.** This is the only output that leaves the building, and both
+documents are written to be blunt: open security findings with file and line, internal
+system and environment names, a plain statement of what personal data accumulates where.
+Correct for the owning team, potentially wrong for the recipient. No grep decides that.
+
+---
+
+## 11. Gotchas, collected
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -530,7 +568,7 @@ works when the hosted one does not.
 
 ---
 
-## 11. Adapting to a different stack
+## 12. Adapting to a different stack
 
 Only **Step 4** (exact ranges) is language-specific. Everything else is stack-agnostic.
 
@@ -560,7 +598,7 @@ Non-code adjustments by stack:
 
 ---
 
-## 12. Checklist
+## 13. Checklist
 
 ```
 [ ] toolkit present at ~/.claude/analysis-tools (nothing is copied into the repo)
@@ -587,7 +625,7 @@ Non-code adjustments by stack:
 
 ---
 
-## 13. Prompts that produce this
+## 14. Prompts that produce this
 
 Paste these into Claude Code from the target repo root, in order.
 
@@ -598,8 +636,9 @@ entity form. A spaced hyphen, comma, colon or parentheses instead.
 
 > Produce an architecture document for this repo from the graph and the evidence commands
 > already run. Cover, as numbered sections: what the system is; the business process in
-> domain language; a complete inventory of entry points; module boundaries with the
-> cross-directory edge table; a layered call graph; sequence diagrams only for flows that
+> domain language; a complete inventory of entry points; module boundaries carrying both
+> tables from modules.cjs, their file counts, the grouping rule stated verbatim and the
+> two-way pairs named; a layered call graph; sequence diagrams only for flows that
 > cross an async or process boundary; state machines only where genuine; the security model
 > with trust boundaries, authentication and authorisation; configuration and secrets
 > including what happens when a variable is absent; infrastructure and deployment topology;
