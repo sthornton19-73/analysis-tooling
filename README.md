@@ -44,16 +44,32 @@ Lines starting with `/` are typed inside a Claude Code session. Everything else 
 
 ### A repo that has never been analysed
 
+**1. In a shell.** Ignore the generated output before any of it exists:
+
 ```powershell
-cd C:epos	arget-repo; claude       # start the session HERE. This cannot be fixed later
-```
-```powershell
+cd C:\repos\target-repo
 Add-Content .gitignore "`n# Generated analysis output`ngraphify-out/`ndocs/.analysis-cache/"
 Add-Content .graphifyignore "docs/*.html"
+git check-ignore -v graphify-out/graph.json    # must print a match, not nothing
 ```
+
+**2. Start the session from that same directory.** The one step that cannot be fixed
+afterwards: a session is filed under the directory it started in, and that folder is never
+renamed.
+
+```powershell
+claude
+```
+
+**3. Inside the session**, build the graph. This is a Claude Code command, not a shell one:
+
 ```
 /graphify . --directed                     # minutes, costs tokens. --directed is required
 ```
+
+**4. Back in a shell**, drive the rest. The session is occupying its terminal, so either use
+a second terminal, or run these from inside the session by prefixing each with `!`:
+
 ```powershell
 node $T/pipeline.cjs . "Project Name" --from 0 --dry-run
 node $T/pipeline.cjs . "Project Name" --from 0

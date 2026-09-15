@@ -44,28 +44,34 @@ or let the Phase 4 session run it, which is what happens when you drive it with
 If you have run this before, this is the lot. Every line is explained in the phase it
 belongs to; the phases exist because each one has a gate worth stopping at.
 
-```bash
-cd /path/to/target-repo && claude          # Phase 0: the session MUST start here
+**1. In a shell**, before anything is generated. These patterns are relative to the file
+they live in, so they must go in the **repo-root** files:
+
+```powershell
+cd <target-repo>
+Add-Content .gitignore "`n# Generated analysis output`ngraphify-out/`ndocs/.analysis-cache/"
+Add-Content .graphifyignore "docs/*.html"
+git check-ignore -v graphify-out/graph.json    # must print a match, not nothing
 ```
 
-Then, inside that session:
+**2. Start the session from that directory**, and nowhere else:
+
+```powershell
+claude
+```
+
+**3. Inside the session.** A Claude Code command, not a shell one:
 
 ```
 /graphify . --directed                     # Phase 1: minutes, costs tokens
 ```
 
-Back in the shell, still inside the session:
+**4. Back in a shell.** The session is occupying its terminal, so use a second terminal or
+prefix each line with `!` to run it from inside the session:
 
-```bash
-# Phase 0: ignore generated output, in the REPO-ROOT .gitignore
-Add-Content .gitignore "`n# Generated analysis output`ngraphify-out/`ndocs/.analysis-cache/"
-git check-ignore -v graphify-out/graph.json         # must print a match, not nothing
-
-# Phase 2: the symbol index.
-node $T/run.cjs . "Project Name"
-
-# Phase 2: the spot check. pick-spot.cjs names a REAL file and symbol; do not guess one.
-node $T/pick-spot.cjs docs/symbol-index.html
+```powershell
+node $T/run.cjs . "Project Name"                     # Phase 2: the symbol index
+node $T/pick-spot.cjs docs/symbol-index.html         # names a REAL file and symbol
 node $T/verify.cjs docs/symbol-index.html <file> <symbol>
 ```
 
