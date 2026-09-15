@@ -41,9 +41,19 @@ this pipeline its own prose back as graph nodes.
 
 ### A repo that already has the set
 
-The difference is entirely at the front. **Refresh the graph before the authoring phases,
-never after**, or both authored documents are written from a graph you then replace, and
-both have to be written again.
+**If only the look changed, do not re-run the phases.** A `doc-shell.html` change reaches
+every document mechanically, in seconds, instead of an hour of agent time per repo producing
+identical prose in different colours:
+
+```bash
+node ~/.claude/analysis-tools/restyle.cjs .               # the two authored documents
+node ~/.claude/analysis-tools/run.cjs . "Project Name"    # the symbol index, from the template
+node ~/.claude/analysis-tools/gates.cjs .                 # a type change moves widths
+```
+
+For a content refresh, the difference is entirely at the front. **Refresh the graph before
+the authoring phases, never after**, or both authored documents are written from a graph you
+then replace, and both have to be written again.
 
 ```bash
 node ~/.claude/analysis-tools/gates.cjs .  # read the Phase 0 and 1 rows first
