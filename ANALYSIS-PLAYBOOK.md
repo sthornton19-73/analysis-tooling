@@ -12,9 +12,33 @@ How to produce, for any repo you own, the four artefacts built for Rugby Ref Coa
 Everything is a **single self-contained HTML file** or a markdown file. No build step, no server,
 no dependency on a hosted viewer. Double-click and it works, on any machine, forever.
 
-The runnable tooling is installed once per machine at `~/.claude/analysis-tools/` and is
+The runnable tooling is installed once per machine at `$T/` and is
 not part of any repo. Every script takes the repo root as an argument, so one copy serves
 every project and nothing is vendored into the repos it analyses.
+
+---
+
+## Paths, on Windows and elsewhere
+
+Set the toolkit path once per shell. Every command below then uses `$T`, which expands in
+PowerShell and in bash alike:
+
+```powershell
+$T = "$env:USERPROFILE\.claude\analysis-tools"     # PowerShell, Windows
+```
+```bash
+T=~/.claude/analysis-tools                          # bash, macOS and Linux
+```
+
+A bare `~` is **not** expanded by PowerShell inside a quoted path or a pasted prompt, which
+is why it is set explicitly rather than written inline.
+
+Any line that is just `node $T/something.cjs ...` runs unchanged in either shell. Only the
+lines using shell built-ins differ, and those are given in PowerShell form; on macOS or
+Linux substitute the obvious equivalent. The one block that genuinely needs a POSIX shell
+is Phase 4's evidence gathering, which uses `grep` and `ls`: on Windows run it in Git Bash,
+or let the Phase 4 session run it, which is what happens when you drive it with
+`pipeline.cjs`.
 
 ---
 
@@ -24,23 +48,23 @@ Artefact 2 (the symbol index) is fully automated. Artefacts 1, 3 and 4 are judge
 and need Claude - the prompts are in §14.
 
 The toolkit is installed **once per machine**, not once per repo, at
-`~/.claude/analysis-tools/`. It carries its own `@babel/parser`, so it works against a
+`$T/`. It carries its own `@babel/parser`, so it works against a
 repo that has no `node_modules` at all, and every output path derives from the root
 argument rather than from where the scripts sit.
 
 ```bash
-# 1. nothing to install if ~/.claude/analysis-tools already exists - check first:
-ls ~/.claude/analysis-tools/run.cjs
+# 1. nothing to install if $T already exists - check first:
+ls $T/run.cjs
 
 #    Moving to a NEW machine? The toolkit is the source of truth, not any repo.
 #    On the old machine:  tar -czf analysis-tools.tgz -C ~/.claude --exclude node_modules analysis-tools
-#    On the new one:      tar -xzf analysis-tools.tgz -C ~/.claude && cd ~/.claude/analysis-tools && npm install
+#    On the new one:      tar -xzf analysis-tools.tgz -C ~/.claude && cd $T && npm install
 
 # 2. in the TARGET repo, ignore the generated output BEFORE running anything.
 #    These patterns are relative to the file they live in - they must go in the
 #    repo-root .gitignore, not in a subdirectory's.
 cd /path/to/other-repo
-printf '\ngraphify-out/\ncoverage/\ndocs/.analysis-cache/\n' >> .gitignore
+Add-Content .gitignore "`ngraphify-out/`ncoverage/`ndocs/.analysis-cache/"
 ```
 
 Then open **Claude Code in that repo** and run the graph build - `/graphify` is a Claude
@@ -53,7 +77,7 @@ Code command, not a shell command:
 Back in a shell, one command does the rest:
 
 ```bash
-node ~/.claude/analysis-tools/run.cjs . "Project Name" src/main.js someFunction
+node $T/run.cjs . "Project Name" src/main.js someFunction
 ```
 
 The last two arguments are optional: a file and a symbol you know, which `verify.cjs`
@@ -63,8 +87,8 @@ match is an exact string comparison against graphify's own labels, so rather tha
 the pair, build the page with no spot arguments and let `pick-spot.cjs` name it:
 
 ```bash
-node ~/.claude/analysis-tools/pick-spot.cjs docs/symbol-index.html
-node ~/.claude/analysis-tools/verify.cjs docs/symbol-index.html <file> <symbol>
+node $T/pick-spot.cjs docs/symbol-index.html
+node $T/verify.cjs docs/symbol-index.html <file> <symbol>
 ```
 
 Output is `docs/symbol-index.html` - self-contained, open it directly. Expect:
@@ -201,7 +225,7 @@ document it explicitly. It is the thing a static analyser cannot tell a reader.
 ## 4. Step 3 - compact the graph
 
 ```bash
-node ~/.claude/analysis-tools/build-graphdata.cjs <repo-root> <out-dir>
+node $T/build-graphdata.cjs <repo-root> <out-dir>
 ```
 
 `graph.json` is verbose and gets embedded verbatim into a single HTML file, so it is
@@ -224,7 +248,7 @@ shipping a hollow explorer.
 ## 5. Step 4 - exact source ranges (the part everyone gets wrong)
 
 ```bash
-node ~/.claude/analysis-tools/build-codedata.cjs <repo-root> <out-dir>
+node $T/build-codedata.cjs <repo-root> <out-dir>
 ```
 
 graphify records where a symbol **starts**. It does not record where it **ends**. Every
@@ -292,9 +316,9 @@ and JS, with the data blocks empty and the project name as `{{PROJECT}}`. `run.c
 in the name and injects; to do it by hand:
 
 ```bash
-sed 's/{{PROJECT}}/My App/g' ~/.claude/analysis-tools/symbol-index-template.html > docs/symbol-index.html
-node ~/.claude/analysis-tools/inject.cjs   docs/symbol-index.html <data-dir>
-node ~/.claude/analysis-tools/verify.cjs   docs/symbol-index.html src/App.jsx quickSaveEvent
+sed 's/{{PROJECT}}/My App/g' $T/symbol-index-template.html > docs/symbol-index.html
+node $T/inject.cjs   docs/symbol-index.html <data-dir>
+node $T/verify.cjs   docs/symbol-index.html src/App.jsx quickSaveEvent
 ```
 
 The template carries two empty placeholders:
@@ -411,7 +435,7 @@ Mermaid is a reasonable alternative if the page is markdown - artifacts render
 
 ---
 
-**Do not write the page CSS from scratch.** `~/.claude/analysis-tools/doc-shell.html`
+**Do not write the page CSS from scratch.** `$T/doc-shell.html`
 is the shared shell for both authored documents - theme tokens, type scale, SVG element
 classes, figures, tables, callouts, severity chips, card grid, responsive rules. Copy it
 and fill in the body.
@@ -495,7 +519,7 @@ is a **body fragment** - the platform supplies the doctype, `<head>` and `<body>
 publish time. Saved to disk raw, it renders in quirks mode with no viewport meta.
 
 ```bash
-node ~/.claude/analysis-tools/standalone.cjs <fragment.html> docs/<name>.html
+node $T/standalone.cjs <fragment.html> docs/<name>.html
 ```
 
 Publishing constraints worth knowing up front, because they shape how you build the page:
@@ -606,7 +630,7 @@ Non-code adjustments by stack:
 ## 13. Checklist
 
 ```
-[ ] toolkit present at ~/.claude/analysis-tools (nothing is copied into the repo)
+[ ] toolkit present at $T (nothing is copied into the repo)
 [ ] gitignore graphify-out/, coverage/, docs/.analysis-cache/ BEFORE running anything
 [ ] git status clean; no AD-state files hiding recoverable work
 [ ] test suite runs; record the real number

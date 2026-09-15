@@ -14,25 +14,49 @@ session doing the judgement work against a runbook of prompts and gates.
 Everything is a single self-contained HTML file or a markdown file. No build step, no
 server, no hosted viewer. Open it from disk and it works.
 
+## Paths, on Windows and elsewhere
+
+Set the toolkit path once per shell. Every command below then uses `$T`, which expands in
+PowerShell and in bash alike:
+
+```powershell
+$T = "$env:USERPROFILE\.claude\analysis-tools"     # PowerShell, Windows
+```
+```bash
+T=~/.claude/analysis-tools                          # bash, macOS and Linux
+```
+
+A bare `~` is **not** expanded by PowerShell inside a quoted path or a pasted prompt, which
+is why it is set explicitly rather than written inline.
+
+Any line that is just `node $T/something.cjs ...` runs unchanged in either shell. Only the
+lines using shell built-ins differ, and those are given in PowerShell form; on macOS or
+Linux substitute the obvious equivalent. The one block that genuinely needs a POSIX shell
+is Phase 4's evidence gathering, which uses `grep` and `ls`: on Windows run it in Git Bash,
+or let the Phase 4 session run it, which is what happens when you drive it with
+`pipeline.cjs`.
+
+---
+
 ## Running it against a repository
 
 Lines starting with `/` are typed inside a Claude Code session. Everything else is a shell.
 
 ### A repo that has never been analysed
 
-```bash
-cd /path/to/target-repo && claude          # start the session HERE. This cannot be fixed later
+```powershell
+cd C:epos	arget-repo; claude       # start the session HERE. This cannot be fixed later
 ```
-```bash
-printf '\n# Generated analysis output\ngraphify-out/\ndocs/.analysis-cache/\n' >> .gitignore
-printf 'docs/*.html\n' >> .graphifyignore
+```powershell
+Add-Content .gitignore "`n# Generated analysis output`ngraphify-out/`ndocs/.analysis-cache/"
+Add-Content .graphifyignore "docs/*.html"
 ```
 ```
 /graphify . --directed                     # minutes, costs tokens. --directed is required
 ```
-```bash
-node ~/.claude/analysis-tools/pipeline.cjs . "Project Name" --from 0 --dry-run
-node ~/.claude/analysis-tools/pipeline.cjs . "Project Name" --from 0
+```powershell
+node $T/pipeline.cjs . "Project Name" --from 0 --dry-run
+node $T/pipeline.cjs . "Project Name" --from 0
 ```
 
 `.graphifyignore` does nothing on a fresh repo, because `docs/` does not exist yet. Add it
@@ -45,35 +69,35 @@ this pipeline its own prose back as graph nodes.
 do not judge it by reading it. The failures name the era and the fix, and the runbook's
 **Triage first** table maps each one:
 
-```bash
-node ~/.claude/analysis-tools/gates.cjs .
+```powershell
+node $T/gates.cjs .
 ```
 
 **If only the look changed, do not re-run the phases.** A `doc-shell.html` change reaches
 every document mechanically, in seconds, instead of an hour of agent time per repo producing
 identical prose in different colours:
 
-```bash
-node ~/.claude/analysis-tools/restyle.cjs .               # the two authored documents
-node ~/.claude/analysis-tools/run.cjs . "Project Name"    # the symbol index, from the template
-node ~/.claude/analysis-tools/gates.cjs .                 # a type change moves widths
+```powershell
+node $T/restyle.cjs .               # the two authored documents
+node $T/run.cjs . "Project Name"    # the symbol index, from the template
+node $T/gates.cjs .                 # a type change moves widths
 ```
 
 For a content refresh, the difference is entirely at the front. **Refresh the graph before
 the authoring phases, never after**, or both authored documents are written from a graph you
 then replace, and both have to be written again.
 
-```bash
-node ~/.claude/analysis-tools/gates.cjs .  # read the Phase 0 and 1 rows first
+```powershell
+node $T/gates.cjs .  # read the Phase 0 and 1 rows first
 ```
 ```
 /graphify . --update                       # code has changed
 /graphify . --force                        # clearing stale nodes, or recovering from a bad run
 ```
-```bash
-ls -l graphify-out/graph.json              # the timestamp MUST have moved before continuing
+```powershell
+Get-Item graphify-out/graph.json | Select-Object LastWriteTime   # MUST have moved
 git rm docs/due-diligence.html             # only if a renamed orphan is still there
-node ~/.claude/analysis-tools/pipeline.cjs . "Project Name" --from 2 --resume
+node $T/pipeline.cjs . "Project Name" --from 2 --resume
 ```
 
 That timestamp check is not ceremony. `run.cjs` compacts the graph rather than building it,
@@ -130,8 +154,8 @@ analysed repository and the copies diverged.
 The parser is installed at the destination rather than copied, because it is a
 platform-specific dependency:
 
-```bash
-cd ~/.claude/analysis-tools && npm install
+```powershell
+cd $T; npm install
 ```
 
 ## What is in here
@@ -153,7 +177,7 @@ cd ~/.claude/analysis-tools && npm install
 | `standalone.cjs` | Wraps a published-artifact body fragment into a real document for local use. |
 | `symbol-index-template.html` | The three-pane symbol index page, with empty data blocks. |
 | `doc-shell.html` | The shared stylesheet and skeleton for the two authored documents. |
-| `bin/install.cjs` | Copies the toolkit into `~/.claude/analysis-tools`. |
+| `bin/install.cjs` | Copies the toolkit into `$T`. |
 
 ## Requirements
 

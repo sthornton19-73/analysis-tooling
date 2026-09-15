@@ -15,6 +15,30 @@ The output is four artefacts:
 
 ---
 
+## Paths, on Windows and elsewhere
+
+Set the toolkit path once per shell. Every command below then uses `$T`, which expands in
+PowerShell and in bash alike:
+
+```powershell
+$T = "$env:USERPROFILE\.claude\analysis-tools"     # PowerShell, Windows
+```
+```bash
+T=~/.claude/analysis-tools                          # bash, macOS and Linux
+```
+
+A bare `~` is **not** expanded by PowerShell inside a quoted path or a pasted prompt, which
+is why it is set explicitly rather than written inline.
+
+Any line that is just `node $T/something.cjs ...` runs unchanged in either shell. Only the
+lines using shell built-ins differ, and those are given in PowerShell form; on macOS or
+Linux substitute the obvious equivalent. The one block that genuinely needs a POSIX shell
+is Phase 4's evidence gathering, which uses `grep` and `ls`: on Windows run it in Git Bash,
+or let the Phase 4 session run it, which is what happens when you drive it with
+`pipeline.cjs`.
+
+---
+
 ## Quick start - the whole sequence in one place
 
 If you have run this before, this is the lot. Every line is explained in the phase it
@@ -34,15 +58,15 @@ Back in the shell, still inside the session:
 
 ```bash
 # Phase 0: ignore generated output, in the REPO-ROOT .gitignore
-printf '\n# Generated analysis output\ngraphify-out/\ndocs/.analysis-cache/\n' >> .gitignore
+Add-Content .gitignore "`n# Generated analysis output`ngraphify-out/`ndocs/.analysis-cache/"
 git check-ignore -v graphify-out/graph.json         # must print a match, not nothing
 
 # Phase 2: the symbol index.
-node ~/.claude/analysis-tools/run.cjs . "Project Name"
+node $T/run.cjs . "Project Name"
 
 # Phase 2: the spot check. pick-spot.cjs names a REAL file and symbol; do not guess one.
-node ~/.claude/analysis-tools/pick-spot.cjs docs/symbol-index.html
-node ~/.claude/analysis-tools/verify.cjs docs/symbol-index.html <file> <symbol>
+node $T/pick-spot.cjs docs/symbol-index.html
+node $T/verify.cjs docs/symbol-index.html <file> <symbol>
 ```
 
 That is artefact 1, and `ALL GOOD` plus a spot-checked symbol whose last line really is the
@@ -68,20 +92,20 @@ one that has just executed a phase will tend to re-execute its remembered versio
 next one:
 
 ```
-Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 3 against this repo.
+Read $T/SESSION-RUNBOOK.md and execute Phase 3 against this repo.
 Use its paste-block prompt verbatim and hold to its gate.
 ```
 ```
-Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 4 against this repo.
-Run its cross-directory edge aggregation first, start from ~/.claude/analysis-tools/doc-shell.html,
+Read $T/SESSION-RUNBOOK.md and execute Phase 4 against this repo.
+Run its cross-directory edge aggregation first, start from $T/doc-shell.html,
 and hold to its gate.
 ```
 ```
-Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 5 against this repo.
+Read $T/SESSION-RUNBOOK.md and execute Phase 5 against this repo.
 Gather its evidence commands first. Every number must trace to something you ran.
 ```
 ```
-Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 6 against this repo.
+Read $T/SESSION-RUNBOOK.md and execute Phase 6 against this repo.
 Do not commit.
 ```
 
@@ -90,9 +114,9 @@ a separate `claude -p` session per guided phase, and runs `gates.cjs` between ea
 rather than feeding a bad artefact to the phase that reads it:
 
 ```bash
-node ~/.claude/analysis-tools/pipeline.cjs . "Project Name" --dry-run   # see the plan
-node ~/.claude/analysis-tools/pipeline.cjs . "Project Name"             # phases 2 to 6
-node ~/.claude/analysis-tools/pipeline.cjs . "Project Name" --from 4 --resume
+node $T/pipeline.cjs . "Project Name" --dry-run   # see the plan
+node $T/pipeline.cjs . "Project Name"             # phases 2 to 6
+node $T/pipeline.cjs . "Project Name" --from 4 --resume
 ```
 
 A process per phase is the point: it is what makes the stale-spec failure structurally
@@ -103,12 +127,9 @@ and cannot be driven from a shell. Phase 7 refuses to run without `--allow-share
 Phase 7 is optional, and runs only when the set is going to someone outside the team:
 
 ```
-Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 7 against this repo.
+Read $T/SESSION-RUNBOOK.md and execute Phase 7 against this repo.
 Review the content that is about to leave the building before doing the mechanics.
 ```
-
-On Windows, `~` in a pasted prompt is not reliably expanded; use the full
-`C:\Users\<you>\.claude\analysis-tools\SESSION-RUNBOOK.md`.
 
 **Phase 3 runs first on purpose**, before 4 and 5. Both prose documents build on what
 README.md and CLAUDE.md claim, so stale facts there propagate into two polished artefacts
@@ -139,8 +160,8 @@ that cannot be fixed afterwards.
 
 Check the toolkit is installed (once per machine, not per repo):
 
-```bash
-ls ~/.claude/analysis-tools/run.cjs || echo "see ANALYSIS-PLAYBOOK.md Quick start"
+```powershell
+Test-Path $T/run.cjs        # False means see ANALYSIS-PLAYBOOK.md Quick start
 ```
 
 **Ignore the generated output before generating any of it.** These patterns are relative
@@ -148,7 +169,7 @@ to the file they live in, so they must go in the **repo-root** `.gitignore` - pu
 them in a subdirectory's silently matches nothing:
 
 ```bash
-printf '\n# Generated analysis output\ngraphify-out/\ndocs/.analysis-cache/\n' >> .gitignore
+Add-Content .gitignore "`n# Generated analysis output`ngraphify-out/`ndocs/.analysis-cache/"
 git check-ignore -v graphify-out/graph.json    # must print a match, not nothing
 ```
 
@@ -159,7 +180,7 @@ in the next graph as `concept` and `rationale` nodes derived from prose Claude w
 from the codebase. Each run feeds the previous run's output into the next one:
 
 ```bash
-printf 'docs/*.html\n' >> .graphifyignore
+Add-Content .graphifyignore "docs/*.html"
 ```
 
 Do this before Phase 1. On a repo that has already been analysed without it, the stale
@@ -199,9 +220,9 @@ rather than hiding it. (§3)
 ## Phase 2 - symbol index (one command)
 
 ```bash
-node ~/.claude/analysis-tools/run.cjs . "Project Name"
-node ~/.claude/analysis-tools/pick-spot.cjs docs/symbol-index.html
-node ~/.claude/analysis-tools/verify.cjs docs/symbol-index.html <file> <symbol>
+node $T/run.cjs . "Project Name"
+node $T/pick-spot.cjs docs/symbol-index.html
+node $T/verify.cjs docs/symbol-index.html <file> <symbol>
 ```
 
 The spot check is **a real file and a real symbol in it**. `run.cjs` accepts the pair as
@@ -286,7 +307,7 @@ So the document is drawn from the graph rather than from an impression of the co
 Aggregate the real cross-directory edges:
 
 ```bash
-node ~/.claude/analysis-tools/modules.cjs .          # --under src by default
+node $T/modules.cjs .          # --under src by default
 ```
 
 Both tables it prints are **required output**, not just evidence: §4 below is where they
@@ -369,7 +390,7 @@ grep -rn "http[s]\?://\|boto3\|requests\.\|fetch(\|axios\|SDK\|client(" . | head
 
 ### Start from the shared page shell, do not re-derive the CSS
 
-`~/.claude/analysis-tools/doc-shell.html` is a blank document with the finished
+`$T/doc-shell.html` is a blank document with the finished
 stylesheet already in it: theme tokens for light and dark, the typographic scale,
 the SVG element classes (`box`/`boxa`/`lnf`/`tm`/`tam`…), figures, tables, callouts,
 the severity chips and the card grid. Copy it, replace the placeholders, write the
@@ -715,7 +736,7 @@ finished either way. Do not guess from reading them. Run the gates and let the f
 you:
 
 ```bash
-node ~/.claude/analysis-tools/gates.cjs .
+node $T/gates.cjs .
 ```
 
 | What fails | Era it came from | What it needs |
@@ -743,10 +764,10 @@ re-running Phases 4 and 5 to pick it up costs over an hour of agent time per rep
 identical prose in different colours. Restyle instead:
 
 ```bash
-node ~/.claude/analysis-tools/restyle.cjs . --dry-run
-node ~/.claude/analysis-tools/restyle.cjs .
-node ~/.claude/analysis-tools/run.cjs . "Project Name"    # the symbol index, from the template
-node ~/.claude/analysis-tools/gates.cjs .                 # a type change moves widths
+node $T/restyle.cjs . --dry-run
+node $T/restyle.cjs .
+node $T/run.cjs . "Project Name"    # the symbol index, from the template
+node $T/gates.cjs .                 # a type change moves widths
 ```
 
 `restyle.cjs` reads the target look out of `doc-shell.html` rather than carrying its own
@@ -768,9 +789,9 @@ confident document about code that no longer exists, with nothing erroring to te
 
 ```bash
 /graphify . --update
-node ~/.claude/analysis-tools/run.cjs . "Project Name"
-node ~/.claude/analysis-tools/pick-spot.cjs docs/symbol-index.html
-node ~/.claude/analysis-tools/verify.cjs docs/symbol-index.html <file> <symbol>
+node $T/run.cjs . "Project Name"
+node $T/pick-spot.cjs docs/symbol-index.html
+node $T/verify.cjs docs/symbol-index.html <file> <symbol>
 ```
 
 Re-run the Phase 2 gates too. A refresh can break range matching that worked before, and
@@ -790,7 +811,7 @@ embedded JSON re-parses and that one named symbol has a real range. Neither know
 is stale. Check the timestamp, which is the only thing that tells you:
 
 ```bash
-ls -l graphify-out/graph.json        # must be newer than the rebuild you just ran
+Get-Item graphify-out/graph.json | Select-Object LastWriteTime   # newer than the rebuild
 ```
 
 Two ways this happens. `/graphify . --force` is a **slash command**: pasted at a shell
@@ -812,7 +833,7 @@ Start a new session, and make the invocation self-checking by naming something t
 spec contains:
 
 ```
-Read ~/.claude/analysis-tools/SESSION-RUNBOOK.md and execute Phase 4 against this repo.
+Read $T/SESSION-RUNBOOK.md and execute Phase 4 against this repo.
 Re-read the file now rather than relying on anything you already know about it. Phase 4
 specifies sixteen required sections. If your reading has fewer, you have stale content:
 stop and say so.
@@ -865,8 +886,8 @@ CLAUDE.md edits that go with them:
 Most of this is runnable. `gates.cjs` carries every row below that a machine can decide:
 
 ```bash
-node ~/.claude/analysis-tools/gates.cjs .        # all phases, exits non-zero on failure
-node ~/.claude/analysis-tools/gates.cjs . 4      # one phase
+node $T/gates.cjs .        # all phases, exits non-zero on failure
+node $T/gates.cjs . 4      # one phase
 ```
 
 It reports `pass`, `fail`, `warn` and `skip`. `warn` is a heuristic that cannot be certain
