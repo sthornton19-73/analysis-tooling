@@ -41,6 +41,14 @@ this pipeline its own prose back as graph nodes.
 
 ### A repo that already has the set
 
+**Start with the gates.** A repo analysed under an older spec looks finished either way, so
+do not judge it by reading it. The failures name the era and the fix, and the runbook's
+**Triage first** table maps each one:
+
+```bash
+node ~/.claude/analysis-tools/gates.cjs .
+```
+
 **If only the look changed, do not re-run the phases.** A `doc-shell.html` change reaches
 every document mechanically, in seconds, instead of an hour of agent time per repo producing
 identical prose in different colours:

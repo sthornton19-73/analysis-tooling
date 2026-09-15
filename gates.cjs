@@ -98,6 +98,37 @@ const widthGate = (file) => () => {
            'px. Fix doc-shell.html, not this page (playbook section 7)');
 };
 
+// A document carries a copy of doc-shell.html's stylesheet, baked in when it was
+// authored. Nothing else notices when the shell moves on: a page on a retired palette
+// passes every other gate. Without this, triage on a repo analysed months ago cannot
+// tell you it needs restyle.cjs, and the tell is invisible until someone opens two
+// documents side by side. Compare the tokens the shell actually declares now.
+const SHELL = path.join(__dirname, 'doc-shell.html');
+const shellTokens = (() => {
+  if (!fs.existsSync(SHELL)) return null;
+  const s = fs.readFileSync(SHELL, 'utf8');
+  const i = s.indexOf(':root{');
+  if (i < 0) return null;
+  const block = s.slice(i, s.indexOf('}', i));
+  const out = {};
+  for (const m of block.matchAll(/(--(?:accent|ink|ground|rule))\s*:\s*(#[0-9a-fA-F]{3,8})/g)) out[m[1]] = m[2].toLowerCase();
+  return Object.keys(out).length ? out : null;
+})();
+
+const shellGate = (file) => () => {
+  if (!exists(file)) return SKIP('not generated yet');
+  if (!shellTokens) return SKIP('cannot read doc-shell.html');
+  const html = read(file);
+  const stale = Object.entries(shellTokens).filter(([k, v]) => {
+    const m = html.match(new RegExp(k.replace(/-/g, '\\-') + '\\s*:\\s*(#[0-9a-fA-F]{3,8})'));
+    return m && m[1].toLowerCase() !== v;
+  });
+  if (!stale.length) return PASS('matches doc-shell.html');
+  return WARN(stale.length + ' token(s) differ from the current shell (' +
+    stale.map(([k, v]) => k + ' wants ' + v).slice(0, 3).join(', ') +
+    '). Authored under an older shell: run restyle.cjs, no phase re-run needed');
+};
+
 const emDashGate = (file) => () => {
   if (!exists(file)) return SKIP('not generated yet');
   const html = read(file);
@@ -232,6 +263,7 @@ const GATES = {
                   '. These are the candidates for an invented name; check each one');
     },
     'no horizontal overflow': widthGate(ARCH),
+    'shell is current': shellGate(ARCH),
     'no em dashes': emDashGate(ARCH),
   }],
 
@@ -258,6 +290,7 @@ const GATES = {
                    : WARN('no severity chips found. The register is the credibility test and it must be rated');
     },
     'no horizontal overflow': widthGate(ASSESS),
+    'shell is current': shellGate(ASSESS),
     'no em dashes': emDashGate(ASSESS),
   }],
 

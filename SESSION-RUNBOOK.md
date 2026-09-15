@@ -708,6 +708,35 @@ repo entirely.
 Coming back to a repo that already has the artefact set. The phases re-run in the same
 order; what changes is how much you need to run.
 
+### Triage first: which era is this repo from?
+
+A repo analysed months ago was written to a different specification, and the documents look
+finished either way. Do not guess from reading them. Run the gates and let the failures tell
+you:
+
+```bash
+node ~/.claude/analysis-tools/gates.cjs .
+```
+
+| What fails | Era it came from | What it needs |
+| :--- | :--- | :--- |
+| `generated docs not graphed` | before `.graphifyignore` | add it, `/graphify . --force`, then a full re-run |
+| `no generated docs in the graph` | graph holds this pipeline's own prose | `/graphify . --force` before anything authors from it |
+| `sixteen sections` finds ~6 | the old three-diagram Phase 4 | Phases 4, 5, 6 |
+| `seven sections` finds 9 or 10 | the old nine-section pack | Phases 5, 6 |
+| `no sale framing` | before the acquirer framing came out | Phases 5, 6 |
+| `every link resolves` reports BROKEN | before the artefact rename | `git rm docs/due-diligence.html`, then 5, 6 |
+| `shell is current` warns | an older `doc-shell.html` | `restyle.cjs` alone. No phase re-run |
+| `no horizontal overflow` | before the `overflow-wrap` shell fix | `restyle.cjs` alone |
+| share copies carry internal links | before they became standalone | Phase 7 |
+
+Two rules survive whatever the table says. **Anything that needs Phase 4 needs 5 and 6
+after it**, because 5 rates the absences 4 lists and both overwrite the nav strips 6 puts
+back. And **any graph rebuild goes first**, never after the authoring phases.
+
+The cheapest outcome is a repo where only `shell is current` and the width gate complain:
+that is a styling upgrade, seconds of work, and no agent involved.
+
 **First, decide whether you need the phases at all.** A change to `doc-shell.html` (palette,
 type stack, a dropped font request) does not change a single word of either document, and
 re-running Phases 4 and 5 to pick it up costs over an hour of agent time per repo to produce
