@@ -393,6 +393,11 @@ number of real boundaries, not to the size of the repo.
 - **A diagram per module.** Nobody reads the 30th one, and all 30 rot together.
 - **A non-functional concern you have no evidence for.** An HA diagram of a system with one
   instance is fiction. Write the one-line absence instead.
+- **A module diagram of a repo with no modules.** Infrastructure and image-build repos have
+  no call or import structure at all; `modules.cjs` detects that and says so. Drawing boxes
+  for `platform/` and `hardening/` with no edges between them communicates nothing the
+  directory listing did not. Half the sections of such a document are absences, and a
+  document that is honestly short beats one padded to look complete.
 
 ### How to draw them
 

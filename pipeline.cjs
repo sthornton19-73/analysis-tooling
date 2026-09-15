@@ -83,6 +83,17 @@ const PHASES = {
       // pick-spot prints the finished verify command as its last line. Reusing it
       // is the point: a pair chosen any other way risks a spelling graphify does
       // not use, and fails the gate for a reason unrelated to what it tests.
+      //
+      // NO CANDIDATES is not a failure. A repo of Dockerfiles, YAML and CI config
+      // has no function bodies to spot-check, and the symbol index is still a valid
+      // artefact with its symbols labelled approximate. Run verify without the pair
+      // so the embedded JSON is still proved to re-parse, which is the half of the
+      // check that always applies.
+      if (/^NO CANDIDATES$/m.test(picked)) {
+        console.log('no spot-check pair available; verifying the embedded blocks only');
+        sh(process.execPath, [path.join(TOOLS, 'verify.cjs'), path.join(ROOT, 'docs/symbol-index.html')]);
+        return;
+      }
       const last = picked.trim().split('\n').pop().trim();
       const m = last.match(/verify\.cjs\s+(\S+)\s+(\S+)\s+(\S+)$/);
       if (!m) throw new Error('could not read a spot-check pair from pick-spot.cjs output');
@@ -262,12 +273,19 @@ const ask = (q) => new Promise((res) => {
     console.log('');
   }
 
-  console.log('== all phases ==');
-  const ok = gates();
+  // Informational only. Every selected phase already passed its own gates in the loop
+  // above, or the run stopped there. This sweep covers phases that were never in scope,
+  // so a partial run must not be failed by gates for work it was not asked to do:
+  // --from 2 --to 2 would otherwise exit non-zero on Phase 6's wiring checks.
+  console.log('== full sweep (informational; out-of-scope phases included) ==');
+  gates();
+  const ranName = selected.map(String).join(', ');
+  console.log('\nPhases ' + ranName + ' ran and passed their own gates.');
+  console.log('Anything failing above belongs to a phase outside --from/--to.');
   console.log('\nRemember what the gates cannot decide: whether the risk register contains a\n' +
               'finding the owner would rather not publish, whether every number traces to a\n' +
               'command that was run, whether each diagram earns its place. Read the documents.');
-  process.exit(ok ? 0 : 1);
+  process.exit(0);
 })();
 
 function gatesQuietlyPass(phase) {

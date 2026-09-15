@@ -176,7 +176,9 @@ const GATES = {
       gd.n.forEach((n, i) => {
         if ((n.k === 'fn' || n.k === 'class') && n.o) { tot++; if (cd.r[i]) wr++; }
       });
-      if (!tot) return WARN('no ast-derived fn/class nodes at all');
+      if (!tot) return WARN('no ast-derived fn/class nodes at all. Expected for a repo of ' +
+        'Dockerfiles, YAML or config, where nothing has an extractable body; the index is ' +
+        'still valid and its symbols are labelled approximate');
       const pct = (wr / tot) * 100;
       return pct >= 99
         ? PASS(wr + '/' + tot + ' (' + pct.toFixed(1) + '%)')

@@ -26,7 +26,21 @@ const ROOT = path.resolve(argv.find((a) => !a.startsWith('--') &&
   argv[argv.indexOf(a) - 1] !== '--under' &&
   !['--big', '--min-child', '--top'].includes(argv[argv.indexOf(a) - 1])) || process.cwd());
 
-const UNDER = opt('--under', 'src');
+// Auto-detect rather than assuming src/. Plenty of repos have no src tree at all:
+// an infrastructure repo is .github/, a few Dockerfiles and some YAML. Erroring out
+// with "no files under src/" there is a tooling failure dressed up as a finding.
+const gdPeek = () => {
+  const p = path.join(path.resolve(argv.find((a) => !a.startsWith('--')) || process.cwd()),
+    'docs/.analysis-cache/graphdata.json');
+  try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return null; }
+};
+const UNDER = (() => {
+  const given = opt('--under', null);
+  if (given) return given;
+  const g = gdPeek();
+  if (!g) return 'src';
+  return g.n.some((n) => /^src\//.test(n.f || '')) ? 'src' : '.';
+})();
 const BIG = parseInt(opt('--big', '25'), 10);
 const MIN_CHILD = parseInt(opt('--min-child', '8'), 10);
 const TOP = parseInt(opt('--top', '20'), 10);
@@ -52,7 +66,10 @@ if (!files.length) {
 const group = {};
 files.forEach((f) => {
   const s = seg(f);
-  group[f] = s.length > 2 ? s.slice(0, 2).join('/') : s[0];
+  // A loose file at the repo root is not a module. Left alone, every top-level
+  // README and handoff note becomes its own one-file row and swamps the table.
+  group[f] = s.length === 1 ? '(repo root)'
+    : s.length > 2 ? s.slice(0, 2).join('/') : s[0];
 });
 
 for (let depth = 2; depth < MAX_DEPTH; depth++) {
@@ -104,8 +121,16 @@ Object.entries(count).sort((a, b) => b[1] - a[1])
 console.log('\nCROSS-MODULE EDGES  (calls and imports, both ends under ' + UNDER + '/)');
 console.log('  ' + skippedOutOfScope + ' edges ignored with an end outside ' + UNDER +
   '/, which are mostly test-to-source and measure coverage rather than coupling.\n');
-console.log('  count  edge');
 const edges = Object.entries(agg).sort((x, y) => y[1] - x[1]);
+if (!edges.length) {
+  console.log('  NONE. This repo has no call or import structure between its directories,');
+  console.log('  which is normal for infrastructure, config and image-build repos where the');
+  console.log('  content is Dockerfiles, YAML and CI workflows rather than code.');
+  console.log('  Say that in section 4 as a one-line absence. Do not draw a module diagram');
+  console.log('  of a dependency graph that does not exist.');
+  process.exit(0);
+}
+console.log('  count  edge');
 edges.slice(0, TOP).forEach(([k, v]) => console.log('  ' + String(v).padStart(5) + '  ' + k));
 if (edges.length > TOP) console.log('  ... ' + (edges.length - TOP) + ' more below the top ' + TOP);
 

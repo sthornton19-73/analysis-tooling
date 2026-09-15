@@ -309,6 +309,42 @@ It also prints two-way pairs. A cycle is what a layered diagram cannot show and 
 reader most wants flagged, so name them in the prose rather than leaving the reader to spot
 them in the table.
 
+### When the repo is not an application
+
+Infrastructure, image-build, config and IaC repos go through this phase unchanged, and
+about half the sections come out as absences. **That is the correct output, not a failed
+run.** `modules.cjs` detects it and says so instead of tabulating a dependency graph that
+does not exist:
+
+```
+  NONE. This repo has no call or import structure between its directories,
+  which is normal for infrastructure, config and image-build repos ...
+```
+
+It also picks its own root: `src/` when the graph has one, the repo root otherwise, so a
+repo of Dockerfiles and workflows does not fail on a missing `src/`.
+
+What to expect, so you can tell a thin document from a broken one:
+
+| Lands properly | Usually a one-line absence |
+| :--- | :--- |
+| §1 what the system is, §2 business process | §4 module boundaries |
+| §3 entry points (CI triggers, not HTTP routes) | §5 layered call graph |
+| §9 configuration and secrets | §7 state machines |
+| §10 infrastructure, which here is the main event | §11 data and persistence |
+| §12 external integrations (registries, mirrors) | §13 and §14, often |
+| §15 performance, as image size and build time | |
+
+Two things follow. **Do not pad an absent section**: "this repo holds no application state"
+is information, and inventing a diagram to fill the space is the failure mode §16 exists to
+name. And **the technical assessment is usually the more valuable artefact** for these
+repos: base image provenance, hardening, what CVE scanning exists, who can push to the
+registry, how secrets reach a build. Those questions all land in Phase 5's risk register.
+
+Phase 2 behaves the same way. A repo with no extractable function bodies produces a valid
+symbol index with its symbols labelled approximate, `pick-spot.cjs` reports `NO CANDIDATES`
+and exits 0, and the spot check is skipped while the embedded blocks are still verified.
+
 Then the facts the graph cannot give you. These are starting points, not a complete
 search - adapt the patterns to the repo's stack and say what you actually ran:
 

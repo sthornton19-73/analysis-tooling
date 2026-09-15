@@ -41,7 +41,21 @@ const rows = Object.keys(cd.r)
   .filter((x) => !x.name.startsWith('.'))
   .sort((a, b) => b.len - a.len);
 
-if (!rows.length) { console.log('no candidates - every ranged symbol was filtered out'); process.exit(1); }
+// No candidates is a legitimate outcome, not an error. A repo of Dockerfiles, YAML
+// and CI config has no extractable function bodies at all, and the playbook's promise
+// is that such a repo still gets its artefacts with symbols labelled approximate.
+// Exiting non-zero here would make "nothing worth spot-checking" fatal to a caller,
+// so say so on stdout and exit 0. The caller decides whether to skip the check.
+if (!rows.length) {
+  const ranged = Object.keys(cd.r).length;
+  console.log('NO CANDIDATES');
+  console.log('  ' + gd.n.length + ' nodes, ' + ranged + ' with an exact range, none of them a');
+  console.log('  fn or class over 15 lines outside the test tree.');
+  console.log('  Normal for a repo with no extractable code (Dockerfiles, YAML, config).');
+  console.log('  Skip the spot check: the symbol index is still valid, and its symbols');
+  console.log('  are labelled approximate, which is the documented behaviour.');
+  process.exit(0);
+}
 
 // Prefer something outside the test tree: a spot check is meant to prove the range
 // extractor works on the code the document is actually about.
