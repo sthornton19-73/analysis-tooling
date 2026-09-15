@@ -130,6 +130,7 @@ cd ~/.claude/analysis-tools && npm install
 | `verify.cjs` | Re-parses both blocks and spot-checks a named symbol. Exits non-zero on failure. |
 | `pick-spot.cjs` | Names a real file and symbol for that spot check, read back out of the built page. |
 | `gates.cjs` | Every machine-checkable gate in the runbook, in one runnable place. Exits non-zero on failure. |
+| `restyle.cjs` | Pushes the current `doc-shell.html` palette and type onto already-generated documents, without re-running a phase. |
 | `modules.cjs` | Module boundaries for the architecture document: adaptive path-prefix grouping, file counts, cross-module edges, two-way pairs. |
 | `standalone.cjs` | Wraps a published-artifact body fragment into a real document for local use. |
 | `symbol-index-template.html` | The three-pane symbol index page, with empty data blocks. |

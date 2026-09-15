@@ -19,7 +19,7 @@ const DEST = path.join(os.homedir(), '.claude', 'analysis-tools');
 // platform-specific dependency and a copied tree goes stale against package.json.
 const FILES = [
     'pipeline.cjs', 'run.cjs', 'build-graphdata.cjs', 'build-codedata.cjs', 'inject.cjs',
-    'verify.cjs', 'pick-spot.cjs', 'gates.cjs', 'modules.cjs', 'standalone.cjs', 'py-ranges.py', 'php-ranges.php',
+    'verify.cjs', 'pick-spot.cjs', 'gates.cjs', 'modules.cjs', 'restyle.cjs', 'standalone.cjs', 'py-ranges.py', 'php-ranges.php',
     'symbol-index-template.html', 'doc-shell.html',
     'ANALYSIS-PLAYBOOK.md', 'SESSION-RUNBOOK.md',
     'package.json', 'package-lock.json',

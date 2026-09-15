@@ -10,67 +10,64 @@
   [hidden]{display:none!important}
 </style>
 <title>{{PROJECT}} Symbol Index</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@85..112,400..700&family=JetBrains+Mono:wght@400;500;700&display=swap">
 </head>
 <body>
 <style>
 :root{
-  --ground:#f5f6f2;
-  --surface:#ffffff;
-  --surface-2:#ebeee7;
-  --hover:#e3e9e2;
-  --ink:#15201c;
-  --ink-2:#4a574f;
-  --ink-3:#78867c;
-  --rule:#d6dbd1;
-  --rule-2:#e6eae1;
-  --accent:#1a7a60;
-  --accent-soft:#ddefe6;
-  --flag:#ab5119;
-  --flag-soft:#f6e4d7;
-  --sel:#cfe7dc;
+  --ground:#ffffff;
+  --surface:#f7f8fa;
+  --surface-2:#eef1f5;
+  --hover:#e8ecf1;
+  --ink:#1c2024;
+  --ink-2:#5a6472;
+  --ink-3:#7d8793;
+  --rule:#dfe3e8;
+  --rule-2:#edf0f4;
+  --accent:#1f4e79;
+  --accent-soft:#e4edf6;
+  --flag:#a4262c;
+  --flag-soft:#f9e6e7;
+  --sel:#cfe0f0;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --ground:#0d1512;
-    --surface:#16221e;
-    --surface-2:#1d2b26;
-    --hover:#243530;
-    --ink:#e9efe9;
-    --ink-2:#a9b9af;
-    --ink-3:#7e8e85;
-    --rule:#2b3b35;
-    --rule-2:#22302b;
-    --accent:#5aecc0;
-    --accent-soft:#16332a;
-    --flag:#e6975f;
-    --flag-soft:#33211a;
-    --sel:#1d4639;
+    --ground:#16191d;
+    --surface:#1e2228;
+    --surface-2:#262b32;
+    --hover:#2c323a;
+    --ink:#e8eaed;
+    --ink-2:#a8b0bb;
+    --ink-3:#7c8794;
+    --rule:#2e343c;
+    --rule-2:#242a31;
+    --accent:#6fb3e8;
+    --accent-soft:#16293a;
+    --flag:#e8949a;
+    --flag-soft:#331d1f;
+    --sel:#1d3a52;
   }
 }
 :root[data-theme="dark"]{
-  --ground:#0d1512;
-  --surface:#16221e;
-  --surface-2:#1d2b26;
-  --hover:#243530;
-  --ink:#e9efe9;
-  --ink-2:#a9b9af;
-  --ink-3:#7e8e85;
-  --rule:#2b3b35;
-  --rule-2:#22302b;
-  --accent:#5aecc0;
-  --accent-soft:#16332a;
-  --flag:#e6975f;
-  --flag-soft:#33211a;
-  --sel:#1d4639;
+  --ground:#16191d;
+  --surface:#1e2228;
+  --surface-2:#262b32;
+  --hover:#2c323a;
+  --ink:#e8eaed;
+  --ink-2:#a8b0bb;
+  --ink-3:#7c8794;
+  --rule:#2e343c;
+  --rule-2:#242a31;
+  --accent:#6fb3e8;
+  --accent-soft:#16293a;
+  --flag:#e8949a;
+  --flag-soft:#331d1f;
+  --sel:#1d3a52;
 }
 
 *{box-sizing:border-box}
 body{
   background:var(--ground);color:var(--ink);
-  font-family:Archivo,system-ui,-apple-system,sans-serif;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   font-size:14px;line-height:1.5;margin:0;
   padding-inline:18px;padding-block:0 48px;
 }
@@ -79,12 +76,12 @@ body{
 /* ── header ─────────────────────────────────────── */
 header{padding-block:28px 16px;border-bottom:2px solid var(--ink);display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:space-between}
 .brand{display:flex;flex-direction:column;gap:5px;min-width:260px}
-h1{font-size:1.5rem;font-weight:700;font-variation-settings:"wdth" 104;letter-spacing:-.012em;margin:0;line-height:1.1}
+h1{font-size:1.5rem;font-weight:700;letter-spacing:-.012em;margin:0;line-height:1.1}
 .sub{color:var(--ink-2);font-size:.85rem;margin:0;max-width:60ch}
 .counts{display:flex;gap:0;flex-wrap:wrap}
 .counts div{padding-right:18px;margin-right:18px;border-right:1px solid var(--rule)}
 .counts div:last-child{border-right:0;margin-right:0;padding-right:0}
-.counts b{display:block;font-family:"JetBrains Mono",monospace;font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.25}
+.counts b{display:block;font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.25}
 .counts span{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
 
 /* ── control bar ────────────────────────────────── */
@@ -98,7 +95,7 @@ input[type="search"],select{
   background:var(--surface);border:1px solid var(--rule);border-radius:2px;
   padding:7px 10px;
 }
-input[type="search"]{flex:1 1 240px;min-width:0;font-family:"JetBrains Mono",monospace}
+input[type="search"]{flex:1 1 240px;min-width:0;font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace}
 input[type="search"]:focus-visible,select:focus-visible,button:focus-visible,tbody tr:focus-visible{
   outline:2px solid var(--accent);outline-offset:1px;
 }
@@ -116,9 +113,9 @@ button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--a
 .crumb a{color:var(--accent);cursor:pointer;text-decoration:none;border-bottom:1px solid transparent}
 .crumb a:hover{border-bottom-color:var(--accent)}
 .crumb span.sep{color:var(--ink-3)}
-.crumb .cur{font-family:"JetBrains Mono",monospace;color:var(--ink);font-weight:500}
+.crumb .cur{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;color:var(--ink);font-weight:500}
 .hint{margin-left:auto;color:var(--ink-3);font-size:11px}
-kbd{font-family:"JetBrains Mono",monospace;font-size:10px;background:var(--surface-2);border:1px solid var(--rule);border-radius:2px;padding:1px 4px}
+kbd{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;font-size:10px;background:var(--surface-2);border:1px solid var(--rule);border-radius:2px;padding:1px 4px}
 
 /* ── tables ─────────────────────────────────────── */
 .tw{overflow-x:auto;border:1px solid var(--rule);border-radius:2px;background:var(--surface)}
@@ -138,9 +135,9 @@ tbody tr:hover{background:var(--hover)}
 tbody tr.dead{cursor:default;color:var(--ink-3)}
 tbody tr.dead:hover{background:transparent}
 td{padding:8px 12px;vertical-align:top}
-td.num{text-align:right;font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
-td.mono{font-family:"JetBrains Mono",monospace;font-size:12.5px;word-break:break-word}
-td.path{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--ink-2);word-break:break-all}
+td.num{text-align:right;font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;font-variant-numeric:tabular-nums}
+td.mono{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;font-size:12.5px;word-break:break-word}
+td.path{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;font-size:12px;color:var(--ink-2);word-break:break-all}
 td.dim{color:var(--ink-3);font-size:12px}
 .zero{color:var(--ink-3)}
 
@@ -151,31 +148,31 @@ td.dim{color:var(--ink-3);font-size:12px}
 .badge.fn{background:var(--accent-soft);color:var(--accent)}
 .badge.module{background:var(--flag-soft);color:var(--flag)}
 .badge.inferred{background:var(--flag-soft);color:var(--flag)}
-.rel{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink-2)}
+.rel{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;font-size:11px;color:var(--ink-2)}
 
 /* ── detail ─────────────────────────────────────── */
 .detail{margin-bottom:22px;padding:16px 18px;border:1px solid var(--rule);border-left:3px solid var(--accent);background:var(--surface);border-radius:2px}
-.detail h2{font-family:"JetBrains Mono",monospace;font-size:1.1rem;font-weight:700;margin:0 0 10px;word-break:break-word}
+.detail h2{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;font-size:1.1rem;font-weight:700;margin:0 0 10px;word-break:break-word}
 .meta{display:flex;flex-wrap:wrap;gap:0;margin:0}
 .meta div{padding-right:20px;margin-right:20px;border-right:1px solid var(--rule);margin-bottom:6px}
 .meta div:last-child{border-right:0}
 .meta dt{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:0 0 2px}
-.meta dd{margin:0;font-family:"JetBrains Mono",monospace;font-size:12px}
+.meta dd{margin:0;font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;font-size:12px}
 
 h3.sec{font-size:.82rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin:26px 0 8px;display:flex;gap:8px;align-items:baseline}
-h3.sec b{font-family:"JetBrains Mono",monospace;color:var(--accent);font-size:.9rem}
+h3.sec b{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;color:var(--accent);font-size:.9rem}
 .empty{padding:18px;color:var(--ink-3);font-size:13px;border:1px dashed var(--rule);border-radius:2px;background:var(--surface)}
 .foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--rule);color:var(--ink-3);font-size:11.5px;max-width:78ch}
-.foot code{font-family:"JetBrains Mono",monospace;background:var(--surface-2);padding:.08em .3em;border-radius:2px}
+.foot code{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;background:var(--surface-2);padding:.08em .3em;border-radius:2px}
 
 /* ── code panel ─────────────────────────────────── */
 .codehead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:26px 0 8px}
 .codehead h3{margin:0;font-size:.82rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
-.codehead .loc{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--ink-2)}
+.codehead .loc{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;font-size:11.5px;color:var(--ink-2)}
 .codehead .acts{margin-left:auto;display:flex;gap:6px}
 .codehead button{padding:5px 9px;font-size:11px}
 .codewrap{border:1px solid var(--rule);border-radius:2px;background:var(--surface);overflow:auto;max-height:70vh}
-.code{font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.62;min-width:max-content}
+.code{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,ui-monospace,monospace;font-size:12px;line-height:1.62;min-width:max-content}
 .cl{display:flex;white-space:pre}
 .cl .ln{
   flex:0 0 auto;width:52px;padding:0 10px 0 0;text-align:right;

@@ -227,6 +227,12 @@ const ask = (q) => new Promise((res) => {
   console.log('phases    ' + selected.map((n) => n + ' ' + PHASES[n].label).join('  |  '));
   console.log('agents    ' + agentCount + ' separate claude sessions, permission-mode ' + PERM);
   if (RESUME) console.log('resume    skipping phases whose gates already pass');
+  // State the exclusion rather than leaving it to be noticed as an absence from the
+  // phase list. --to defaults to 6, so no --from value ever reaches 7 on its own.
+  if (!selected.includes(7)) {
+    console.log('note      phase 7 (share copies) excluded. It is opt-in twice: --to 7 and');
+    console.log('          --allow-share, because its output leaves the building.');
+  }
   console.log('');
 
   if (DRY) { console.log('dry run, nothing executed'); process.exit(0); }
